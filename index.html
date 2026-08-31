@@ -1036,9 +1036,8 @@
           <div class="yt-preview" id="afYtPrev"><img id="afYtImg" alt=""></div>
         </div>
         <div class="ff-row">
-          <label>Módulo</label>
-          <input list="modList" id="afMod" placeholder="Escolha ou digite um módulo">
-          <datalist id="modList"></datalist>
+          <label>Trilha (onde a aula vai aparecer)</label>
+          <select id="afTrilha"></select>
         </div>
         <div class="ff-row two">
           <div><label>Duração</label><input type="text" id="afDur" placeholder="9 min"></div>
@@ -1334,23 +1333,32 @@ const DEFAULT_AULAS = [
   {id:"ticket-medio", mod:"Ticket médio e crescimento", t:"Produto âncora e cross-sell", d:"Telha leva parafuso, coluna leva estribo. A terceira alavanca do crescimento.", dur:"12 min", st:"bloqueado", area:"comercial", tag:"", yt:""},
 ];
 
-const DB = {
-  // >>> SUPABASE: select/insert/update/delete na tabela "aulas"
-  aulas(){
-    let a = LS.get('cp_aulas', null);
-    if(!a){ a = JSON.parse(JSON.stringify(DEFAULT_AULAS)); LS.set('cp_aulas', a); }
-    return a;
-  },
-  saveAll(arr){ LS.set('cp_aulas', arr); },
-  upsert(obj){
-    const a = this.aulas();
-    const i = a.findIndex(x=>x.id===obj.id);
-    if(i>=0) a[i]=obj; else a.push(obj);
-    this.saveAll(a);
-  },
-  remove(id){ this.saveAll(this.aulas().filter(x=>x.id!==id)); },
-  reset(){ LS.del('cp_aulas'); return this.aulas(); },
-};
+let AULAS_CACHE=[], AULA_TRILHA={};
+const DB = { aulas(){ return AULAS_CACHE; } };
+async function loadAulas(){
+  try{
+    const { data:aus } = await sb.from('aulas').select('*').order('created_at');
+    AULAS_CACHE = (aus||[]).map(a=>({ id:a.id, mod:a.modulo, t:a.titulo, d:a.descricao, resumo:a.resumo, dur:a.dur, st:a.status, area:a.area, tag:a.tag, yt:a.yt }));
+    const { data:ta } = await sb.from('trilha_aulas').select('trilha_id,aula_id,ordem').order('ordem');
+    const map={}; AULA_TRILHA={};
+    (ta||[]).forEach(r=>{ (map[r.trilha_id]=map[r.trilha_id]||[]).push(r.aula_id); if(!AULA_TRILHA[r.aula_id]) AULA_TRILHA[r.aula_id]=r.trilha_id; });
+    TRILHAS.forEach(t=>{ t.aulas = map[t.id] || []; });
+  }catch(e){ AULAS_CACHE=[]; }
+}
+async function saveAulaDB(obj, trilhaId){
+  // obj: {id?, t, mod, d, resumo, dur, area, st, tag, yt}
+  const row={ titulo:obj.t, modulo:obj.mod||null, descricao:obj.d||null, resumo:obj.resumo||null, dur:obj.dur||null, area:obj.area||null, status:obj.st||'disponivel', tag:obj.tag||null, yt:obj.yt||null };
+  let aulaId=obj.id;
+  if(aulaId){ const { error }=await sb.from('aulas').update(row).eq('id', aulaId); if(error) return {error:error.message}; }
+  else { const { data, error }=await sb.from('aulas').insert(row).select('id').single(); if(error) return {error:error.message}; aulaId=data.id; }
+  if(trilhaId){
+    await sb.from('trilha_aulas').delete().eq('aula_id', aulaId);
+    const { error:te }=await sb.from('trilha_aulas').insert({ trilha_id:trilhaId, aula_id:aulaId, ordem:0 });
+    if(te) return {error:te.message};
+  }
+  return {ok:true, id:aulaId};
+}
+async function removeAulaDB(id){ const { error }=await sb.from('aulas').delete().eq('id', id); return error?{error:error.message}:{ok:true}; }
 
 /* progresso por usuário  // >>> SUPABASE: tabela "progresso" (user_id, aula_id) + RLS */
 const Prog = {
@@ -1642,25 +1650,26 @@ function slugify(s){ return String(s).toLowerCase().normalize('NFD').replace(/[�
 function renderAdmin(){
   const AULAS = DB.aulas();
   document.getElementById('adminCount').textContent = AULAS.length+' aula'+(AULAS.length!==1?'s':'');
-  // datalist de módulos
-  const mods = [...new Set(AULAS.map(a=>a.mod))];
-  document.getElementById('modList').innerHTML = mods.map(m=>`<option value="${m}">`).join('');
-  // lista
+  const tsel=document.getElementById('afTrilha');
+  if(tsel && !tsel.options.length){ tsel.innerHTML = TRILHAS.map(t=>`<option value="${t.id}">${(t.sup+' '+t.nome).trim()}</option>`).join(''); }
   document.getElementById('adminList').innerHTML = AULAS.map(a=>{
     const id = ytId(a.yt);
+    const tObj = TRILHAS.find(x=>x.id===AULA_TRILHA[a.id]);
+    const tNome = tObj ? (tObj.sup+' '+tObj.nome).trim() : 'sem trilha';
     return `<div class="al-item">
       <div class="al-thumb">${id?`<img src="${ytThumb(id)}" alt="">`:`<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`}</div>
-      <div class="al-meta"><b>${a.t}</b><span>${a.mod} · ${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
+      <div class="al-meta"><b>${a.t}</b><span>${tNome} · ${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
       <div class="al-act">
         <button class="icon-btn" data-edit="${a.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
         <button class="icon-btn del" data-del="${a.id}" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
       </div>
     </div>`;
   }).join('') || `<div class="empty"><h4>Nenhuma aula cadastrada</h4><p>Use o formulário ao lado pra adicionar a primeira.</p></div>`;
-
   document.querySelectorAll('#adminList [data-edit]').forEach(b=> b.onclick=()=>editAula(b.dataset.edit));
-  document.querySelectorAll('#adminList [data-del]').forEach(b=> b.onclick=()=>{
-    if(confirm('Remover esta aula?')){ DB.remove(b.dataset.del); renderAdmin(); renderAulas(currentFilter); refreshProgress(); toast('Aula removida'); }
+  document.querySelectorAll('#adminList [data-del]').forEach(b=> b.onclick=async ()=>{
+    if(!confirm('Remover esta aula?')) return;
+    const r=await removeAulaDB(b.dataset.del); if(r.error){ toast('Erro: '+r.error); return; }
+    await loadAulas(); renderAdmin(); renderTrilhas(); toast('Aula removida');
   });
 }
 
@@ -1669,7 +1678,7 @@ function editAula(id){
   document.getElementById('afId').value = a.id;
   document.getElementById('afT').value = a.t||'';
   document.getElementById('afYt').value = a.yt||'';
-  document.getElementById('afMod').value = a.mod||'';
+  document.getElementById('afTrilha').value = AULA_TRILHA[a.id] || 'inicio';
   document.getElementById('afDur').value = a.dur||'';
   document.getElementById('afArea').value = a.area||'comercial';
   document.getElementById('afSt').value = a.st||'disponivel';
@@ -1683,7 +1692,7 @@ function editAula(id){
 }
 
 function clearAdminForm(){
-  ['afId','afT','afYt','afMod','afDur','afD','afResumo'].forEach(i=>document.getElementById(i).value='');
+  ['afId','afT','afYt','afDur','afD','afResumo'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('afArea').value='comercial';
   document.getElementById('afSt').value='disponivel';
   document.getElementById('afTag').value='';
@@ -2001,31 +2010,34 @@ document.getElementById('afYt').addEventListener('input', ytPrev);
 document.getElementById('afClear').addEventListener('click', clearAdminForm);
 document.getElementById('afAddMat').addEventListener('click', ()=>addMatRow());
 document.getElementById('afMats').addEventListener('click', e=>{ const b=e.target.closest('.mr-del'); if(b){ b.closest('.mat-row').remove(); renderMatEmpty(); } });
-document.getElementById('adminReset').addEventListener('click', ()=>{
-  if(confirm('Restaurar a lista de aulas padrão? Isso apaga as alterações do preview.')){ DB.reset(); renderAdmin(); renderAulas(currentFilter); refreshProgress(); toast('Lista restaurada'); }
+document.getElementById('adminReset').addEventListener('click', async ()=>{
+  await loadAulas(); renderAdmin(); renderTrilhas(); toast('Lista atualizada');
 });
-document.getElementById('adminForm').addEventListener('submit', e=>{
+document.getElementById('adminForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const t = document.getElementById('afT').value.trim();
   if(!t){ toast('Dê um título à aula'); return; }
-  let id = document.getElementById('afId').value || slugify(t);
+  const trilhaId = document.getElementById('afTrilha').value;
+  const tObj = TRILHAS.find(x=>x.id===trilhaId);
   const obj = {
-    id,
+    id: document.getElementById('afId').value || null,
     t,
     yt: document.getElementById('afYt').value.trim(),
-    mod: document.getElementById('afMod').value.trim() || 'Comece por aqui',
+    mod: tObj ? (tObj.sup+' '+tObj.nome).trim() : null,
     dur: document.getElementById('afDur').value.trim(),
     area: document.getElementById('afArea').value,
     st: document.getElementById('afSt').value,
     tag: document.getElementById('afTag').value,
     d: document.getElementById('afD').value.trim(),
     resumo: document.getElementById('afResumo').value.trim(),
-    mats: collectMats(),
   };
-  DB.upsert(obj);
+  toast('Salvando…');
+  const r = await saveAulaDB(obj, trilhaId);
+  if(r.error){ toast('Erro: '+r.error); return; }
+  await loadAulas();
   clearAdminForm();
-  renderAdmin(); renderAulas(currentFilter); refreshProgress();
-  toast('Aula salva ✓');
+  renderAdmin(); renderTrilhas(); refreshProgress();
+  toast('Aula salva ✓ — na trilha '+(tObj?tObj.nome:''));
 });
 
 /* toast */
@@ -2060,7 +2072,7 @@ async function enterApp(){
   // admin nav
   document.querySelectorAll('.admin-only').forEach(el=> el.style.display = Auth.isAdmin()?'':'none');
   // carrega dados compartilhados do Supabase
-  try{ await Promise.all([ loadEmpresas(), loadMateriais(), loadCovers() ]); }catch(e){}
+  try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers() ]); }catch(e){}
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   show('inicio');
