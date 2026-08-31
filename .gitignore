@@ -1,0 +1,12 @@
+# Sistema / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# Dependências (não usadas hoje, mas evita subir por engano)
+node_modules/
+
+# Segredos (não commitar chaves/senhas reais)
+.env
+.env.*

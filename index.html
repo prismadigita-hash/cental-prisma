@@ -1,0 +1,1933 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central Prisma — Implantação do Método</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0A0D; --navy-deep:#17151B; --navy:#201C26; --navy-soft:#322C3A;
+    --red:#E63956; --green:#1FAA59; --green-light:#6FE69E;
+    --amber:#E89B3C; --amber-soft:rgba(232,155,60,.12);
+    --cyan:#FF4D6D; --cyan-soft:rgba(255,77,109,.12);
+    --warm:#F0B267; --warm-soft:rgba(240,178,103,.10);
+    --g100:#F4F5F8; --g300:#D4D8E1; --g500:#8A93A8; --g700:#2C3556;
+    --line:rgba(138,147,168,.16);
+    --r-card:14px; --r-btn:10px;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',-apple-system,sans-serif;
+    background:var(--bg); color:var(--g100);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  /* fundo: grid técnico + brilho quente e frio combinados (aconchego + método) */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(255,77,109,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,77,109,.02) 1px, transparent 1px);
+    background-size:46px 46px;
+  }
+  body::after{
+    content:""; position:fixed; pointer-events:none; z-index:0;
+    top:-320px; left:50%; transform:translateX(-50%);
+    width:1100px; height:680px; border-radius:50%;
+    background:
+      radial-gradient(closest-side, rgba(240,178,103,.06), transparent 70%),
+      radial-gradient(closest-side, rgba(255,77,109,.045), transparent 72%);
+  }
+
+  /* ===================================================================
+     LOGIN
+  =================================================================== */
+  .auth-screen{
+    display:none; min-height:100vh; position:relative; z-index:2;
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .auth-screen.on{display:flex; animation:fadeUp .4s ease}
+  .auth-card{
+    width:100%; max-width:410px;
+    background:linear-gradient(160deg, var(--navy-deep) 0%, var(--navy) 100%);
+    border:1px solid var(--line); border-radius:20px;
+    padding:38px 34px 30px; position:relative; overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.5);
+  }
+  .auth-card::before{
+    content:""; position:absolute; top:-120px; right:-80px;
+    width:320px; height:320px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(240,178,103,.14), transparent 70%);
+    pointer-events:none;
+  }
+  .auth-brand{display:flex; align-items:center; gap:12px; margin-bottom:26px; position:relative}
+  .auth-brand .mark{
+    width:44px; height:44px; border-radius:11px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+    border:1px solid var(--cyan-soft);
+    display:flex; align-items:center; justify-content:center; position:relative;
+  }
+  .auth-brand .mark::before{
+    content:""; position:absolute; top:4px; left:4px; width:9px; height:9px;
+    border-top:1.5px solid var(--cyan); border-left:1.5px solid var(--cyan);
+  }
+  .auth-brand .mark svg{width:22px; height:22px; stroke:var(--g100); stroke-width:2.2; fill:none}
+  .auth-brand .t{font-size:17px; font-weight:900; letter-spacing:.2px; line-height:1.1}
+  .auth-brand .t small{
+    display:block; font-family:var(--mono); font-size:8.5px; font-weight:500;
+    color:var(--cyan); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px;
+  }
+  .auth-card h1{font-size:23px; font-weight:900; letter-spacing:-.5px; line-height:1.2; position:relative}
+  .auth-card .lead{font-size:13.5px; color:var(--g300); margin-top:9px; margin-bottom:26px; position:relative; max-width:330px}
+  .fld{margin-bottom:15px; position:relative}
+  .fld label{
+    display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:1.8px;
+    text-transform:uppercase; color:var(--g500); margin-bottom:7px;
+  }
+  .fld input{
+    width:100%; padding:13px 15px; font-size:14px; font-family:inherit;
+    background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--g100);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .fld input:focus{outline:none; border-color:var(--cyan); box-shadow:0 0 0 3px rgba(255,77,109,.12)}
+  .fld input::placeholder{color:var(--g500)}
+  .auth-btn{
+    width:100%; margin-top:8px; padding:14px; font-size:14px; font-weight:800; font-family:inherit;
+    background:linear-gradient(135deg, var(--green) 0%, #17994f 100%); color:#fff;
+    border:none; border-radius:11px; cursor:pointer; transition:transform .12s, filter .15s;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  .auth-btn:hover{filter:brightness(1.08)}
+  .auth-btn:active{transform:scale(.99)}
+  .auth-btn svg{width:16px; height:16px; stroke:#fff; stroke-width:2.4; fill:none}
+  .auth-err{
+    display:none; margin-top:14px; font-size:12.5px; color:var(--red); font-weight:600;
+    background:rgba(230,57,86,.08); border:1px solid rgba(230,57,86,.3);
+    border-radius:9px; padding:10px 13px;
+  }
+  .auth-err.on{display:block}
+  .auth-foot{
+    margin-top:22px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:11.5px; color:var(--g500); line-height:1.6; position:relative;
+  }
+  .auth-foot b{color:var(--g300); font-weight:700}
+  .auth-demo{
+    margin-top:12px; font-family:var(--mono); font-size:10.5px; color:var(--g500);
+    background:var(--bg); border:1px dashed var(--line); border-radius:9px; padding:11px 13px; line-height:1.7;
+  }
+  .auth-demo .dk{color:var(--amber); letter-spacing:1.5px; text-transform:uppercase; font-size:8.5px; display:block; margin-bottom:5px}
+  .auth-demo code{color:var(--cyan)}
+
+  /* ===================================================================
+     APP
+  =================================================================== */
+  .app{display:none; grid-template-columns:256px 1fr; min-height:100vh; position:relative; z-index:1}
+  .app.on{display:grid}
+
+  /* ============ SIDEBAR ============ */
+  .sidebar{
+    background:var(--navy-deep);
+    border-right:1px solid var(--line);
+    padding:22px 14px;
+    display:flex; flex-direction:column; gap:4px;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    padding:4px 10px 20px; margin-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand .mark{
+    width:36px; height:36px; border-radius:9px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+    border:1px solid var(--cyan-soft);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .brand .mark::before{
+    content:""; position:absolute; top:3px; left:3px;
+    width:7px; height:7px;
+    border-top:1.5px solid var(--cyan); border-left:1.5px solid var(--cyan);
+  }
+  .brand .mark svg{width:17px; height:17px; stroke:var(--g100); stroke-width:2.2; fill:none}
+  .brand .t{font-size:14px; font-weight:900; letter-spacing:.3px; line-height:1.1}
+  .brand .t small{
+    display:block; font-family:var(--mono); font-size:8.5px; font-weight:500;
+    color:var(--cyan); letter-spacing:2.5px; text-transform:uppercase; margin-top:3px;
+  }
+  .nav-label{
+    font-family:var(--mono); font-size:9px; font-weight:500;
+    letter-spacing:2.5px; text-transform:uppercase; color:var(--g500);
+    padding:16px 12px 6px;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:10px 12px; border-radius:var(--r-btn);
+    font-size:13.5px; font-weight:600; color:var(--g300);
+    cursor:pointer; border:1px solid transparent;
+    background:transparent; width:100%; text-align:left; font-family:inherit;
+    transition:background .15s, color .15s, border-color .15s;
+    position:relative;
+  }
+  .nav-item svg{width:17px; height:17px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
+  .nav-item:hover{background:rgba(255,77,109,.05); color:var(--g100)}
+  .nav-item.active{
+    background:var(--cyan-soft); color:var(--cyan);
+    border-color:rgba(255,77,109,.25);
+  }
+  .nav-item.active::before{
+    content:""; position:absolute; left:-14px; top:50%; transform:translateY(-50%);
+    width:3px; height:18px; background:var(--cyan); border-radius:0 3px 3px 0;
+  }
+  .nav-item .lock{margin-left:auto; width:13px; height:13px; opacity:.6}
+  .nav-admin.active{background:var(--amber-soft); color:var(--amber); border-color:rgba(232,155,60,.3)}
+  .nav-admin.active::before{background:var(--amber)}
+  .nav-admin:hover{background:rgba(232,155,60,.06)}
+
+  /* rodapé sidebar = usuário logado */
+  .side-user{
+    margin-top:auto; padding-top:14px; border-top:1px solid var(--line);
+  }
+  .side-user .u-chip{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--line);
+  }
+  .side-user .u-av{
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 100%);
+    border:1px solid var(--cyan-soft); color:var(--cyan);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
+  }
+  .side-user .u-meta{min-width:0; flex:1}
+  .side-user .u-name{font-size:12.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .side-user .u-role{font-family:var(--mono); font-size:8.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-light); margin-top:2px}
+  .side-user .u-role.adm{color:var(--amber)}
+  .logout-btn{
+    width:100%; margin-top:8px; padding:9px; border-radius:9px; cursor:pointer;
+    background:transparent; border:1px solid var(--line); color:var(--g500);
+    font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .15s;
+  }
+  .logout-btn:hover{border-color:var(--red); color:var(--red)}
+  .logout-btn svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none}
+
+  /* ============ MAIN ============ */
+  .content{min-width:0; display:flex; flex-direction:column}
+  .topbar{
+    display:flex; align-items:center; gap:14px;
+    padding:16px 28px;
+    background:rgba(11,21,48,.82); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:40;
+  }
+  .search{flex:1; max-width:520px; position:relative}
+  .search svg{
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:16px; height:16px; stroke:var(--g500); stroke-width:2; fill:none;
+  }
+  .search input{
+    width:100%; padding:11px 14px 11px 42px;
+    background:var(--bg); border:1px solid var(--line); border-radius:10px;
+    color:var(--g100); font-size:13.5px; font-family:inherit;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search input::placeholder{color:var(--g500)}
+  .search input:focus{outline:none; border-color:var(--cyan); box-shadow:0 0 0 3px rgba(255,77,109,.12)}
+  .search .kbd{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-family:var(--mono); font-size:10px; color:var(--g500);
+    border:1px solid var(--line); border-radius:5px; padding:2px 6px;
+  }
+  .top-status{display:flex; align-items:center; gap:18px; margin-left:auto}
+  .status-chip{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700}
+  .status-chip .pulse{
+    width:8px; height:8px; border-radius:50%; background:var(--green-light);
+    box-shadow:0 0 0 0 rgba(111,230,158,.5); animation:pulse 2.4s infinite;
+  }
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(111,230,158,.45)}70%{box-shadow:0 0 0 7px rgba(111,230,158,0)}100%{box-shadow:0 0 0 0 rgba(111,230,158,0)}}
+  .prog-mini{display:flex; align-items:center; gap:10px}
+  .prog-mini .bar{width:110px; height:6px; background:var(--navy-soft); border-radius:99px; overflow:hidden}
+  .prog-mini .fill{height:100%; width:0%; background:linear-gradient(90deg, var(--green), var(--green-light)); border-radius:99px; transition:width .6s ease}
+  .prog-mini .n{font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--green-light)}
+  .prog-mini .pl-lbl{font-size:11px; color:var(--g500); font-weight:600}
+  .filters.tchips{margin-bottom:12px}
+  .avatar{
+    width:34px; height:34px; border-radius:50%;
+    background:var(--navy-soft); border:1px solid var(--cyan-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12.5px; font-weight:800; color:var(--cyan);
+  }
+
+  /* views */
+  .view{display:none; padding:30px 28px 60px; max-width:1180px; width:100%; margin:0 auto}
+  .view.on{display:block; animation:fadeUp .28s ease}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  .view-head{margin-bottom:26px}
+  .view-head .crumb{
+    font-family:var(--mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase;
+    color:var(--cyan); margin-bottom:10px; display:flex; align-items:center; gap:8px;
+  }
+  .view-head .crumb::before{content:""; width:22px; height:1.5px; background:var(--cyan)}
+  .view-head h1{font-size:27px; font-weight:900; letter-spacing:-.6px; line-height:1.1}
+  .view-head .sub{font-size:13.5px; color:var(--g500); margin-top:8px; max-width:640px}
+
+  .panel{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:22px; position:relative}
+  .panel.tick::before{
+    content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px;
+    border-top:2px solid var(--cyan); border-left:2px solid var(--cyan); border-radius:var(--r-card) 0 0 0;
+  }
+  .panel-k{font-family:var(--mono); font-size:9.5px; letter-spacing:2.2px; text-transform:uppercase; color:var(--g500); margin-bottom:12px}
+
+  .tag{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--mono); font-size:9.5px; font-weight:700;
+    letter-spacing:1.4px; text-transform:uppercase; padding:4px 9px; border-radius:5px;
+  }
+  .tag.cyan{background:var(--cyan-soft); color:var(--cyan); border:1px solid rgba(255,77,109,.25)}
+  .tag.green{background:rgba(111,230,158,.1); color:var(--green-light); border:1px solid rgba(111,230,158,.25)}
+  .tag.amber{background:rgba(232,155,60,.1); color:var(--amber); border:1px solid rgba(232,155,60,.3)}
+  .tag.red{background:rgba(230,57,86,.1); color:var(--red); border:1px solid rgba(230,57,86,.3)}
+  .tag.gray{background:rgba(138,147,168,.1); color:var(--g500); border:1px solid var(--line)}
+  .tag .dot{width:5px; height:5px; border-radius:50%; background:currentColor}
+
+  /* ============ DASHBOARD ============ */
+  .dash-hero{display:grid; grid-template-columns:1fr 300px; gap:18px; margin-bottom:18px}
+  .welcome{
+    background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%);
+    border:1px solid var(--line); border-radius:var(--r-card);
+    padding:30px; position:relative; overflow:hidden;
+  }
+  .welcome::before{
+    content:""; position:absolute; top:-90px; right:-60px; width:340px; height:340px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(240,178,103,.12), transparent 70%); pointer-events:none;
+  }
+  .welcome .mono-label{font-family:var(--mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--amber); margin-bottom:12px; position:relative}
+  .welcome h2{font-size:26px; font-weight:900; letter-spacing:-.5px; line-height:1.2; max-width:460px; position:relative}
+  .welcome h2 .gl{color:var(--green-light)}
+  .welcome p{font-size:13.5px; color:var(--g300); margin-top:10px; max-width:480px; position:relative}
+  /* continue assistindo */
+  .continue{
+    margin-top:22px; display:flex; align-items:center; gap:16px;
+    background:var(--bg); border:1px solid rgba(111,230,158,.28);
+    border-radius:12px; padding:12px 14px; position:relative; z-index:1;
+    cursor:pointer; transition:border-color .15s, transform .15s;
+  }
+  .continue:hover{border-color:rgba(111,230,158,.55); transform:translateY(-1px)}
+  .continue .ct-thumb{
+    width:104px; height:60px; border-radius:9px; flex-shrink:0; overflow:hidden; position:relative;
+    background:var(--navy); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .continue .ct-thumb img{width:100%; height:100%; object-fit:cover}
+  .continue .ct-thumb .pl2{
+    position:absolute; inset:0; margin:auto; width:32px; height:32px; border-radius:50%;
+    background:rgba(7,11,24,.55); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .continue .ct-thumb .pl2 svg{width:13px; height:13px; fill:#fff; margin-left:2px}
+  .continue .ct-meta{flex:1; min-width:0}
+  .continue .ct-k{font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--green-light); margin-bottom:4px}
+  .continue .ct-t{font-size:14.5px; font-weight:800; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .continue .ct-s{font-family:var(--mono); font-size:10px; color:var(--g500); margin-top:3px}
+  .continue .go{
+    width:38px; height:38px; border-radius:10px; flex-shrink:0;
+    background:var(--green); display:flex; align-items:center; justify-content:center; transition:transform .15s;
+  }
+  .continue:hover .go{transform:translateX(3px)}
+  .continue .go svg{width:16px; height:16px; stroke:#fff; stroke-width:2.5; fill:none}
+
+  .ring-card{
+    background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card);
+    padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center;
+  }
+  .ring{position:relative; width:132px; height:132px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .track{fill:none; stroke:var(--navy-soft); stroke-width:9}
+  .ring .val{fill:none; stroke:url(#gradRing); stroke-width:9; stroke-linecap:round; stroke-dasharray:339.3; stroke-dashoffset:339.3; transition:stroke-dashoffset 1s ease}
+  .ring .num{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .ring .num b{font-family:var(--mono); font-size:26px; font-weight:700; color:var(--green-light)}
+  .ring .num span{font-family:var(--mono); font-size:9px; letter-spacing:1.8px; text-transform:uppercase; color:var(--g500)}
+  .ring-card .rc-t{font-size:13px; font-weight:700}
+  .ring-card .rc-s{font-size:11.5px; color:var(--g500)}
+
+  .dash-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-bottom:18px}
+  .stat-sm{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:18px 20px}
+  .stat-sm .k{font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--g500)}
+  .stat-sm .v{font-size:19px; font-weight:900; margin-top:6px; letter-spacing:-.3px}
+  .stat-sm .v small{font-size:12px; font-weight:600; color:var(--g500)}
+  .stat-sm.warn{border-color:rgba(232,155,60,.3)}
+  .stat-sm.warn .v{color:var(--amber)}
+
+  .dash-cols{display:grid; grid-template-columns:1.4fr 1fr; gap:18px}
+  .lesson-row{display:flex; align-items:center; gap:14px; padding:13px 4px; border-bottom:1px solid var(--line); cursor:pointer; transition:background .15s; border-radius:6px}
+  .lesson-row:last-child{border-bottom:none}
+  .lesson-row:hover{background:rgba(255,77,109,.04)}
+  .lesson-row .thumb{width:64px; height:40px; border-radius:7px; flex-shrink:0; background:var(--navy); border:1px solid var(--line); overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative}
+  .lesson-row .thumb img{width:100%; height:100%; object-fit:cover}
+  .lesson-row .thumb svg{width:13px; height:13px; fill:var(--g500)}
+  .lesson-row .lt{flex:1; min-width:0}
+  .lesson-row .lt b{font-size:13px; font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lesson-row .lt span{font-family:var(--mono); font-size:10px; color:var(--g500); letter-spacing:.5px}
+  .pend-item{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line)}
+  .pend-item:last-child{border-bottom:none}
+  .pend-item .pi-dot{width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0}
+  .pend-item.p-amber .pi-dot{background:var(--amber)}
+  .pend-item.p-red .pi-dot{background:var(--red)}
+  .pend-item .pi-t{font-size:13px; font-weight:600; line-height:1.4}
+  .pend-item .pi-s{font-size:11.5px; color:var(--g500); margin-top:2px}
+
+  .tl-mini{display:flex; gap:0; margin-top:16px}
+  .tl-mini .seg{flex:1; text-align:center; position:relative; padding-top:16px}
+  .tl-mini .seg::before{content:""; position:absolute; top:5px; left:0; right:0; height:2px; background:var(--navy-soft)}
+  .tl-mini .seg::after{content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); width:11px; height:11px; border-radius:50%; background:var(--navy-deep); border:2px solid var(--g500)}
+  .tl-mini .seg.done::before{background:var(--green)}
+  .tl-mini .seg.done::after{background:var(--green); border-color:var(--green)}
+  .tl-mini .seg.now::after{background:var(--bg); border-color:var(--cyan); box-shadow:0 0 8px rgba(255,77,109,.5)}
+  .tl-mini .seg .st{font-family:var(--mono); font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--g500)}
+  .tl-mini .seg.now .st{color:var(--cyan); font-weight:700}
+  .tl-mini .seg.done .st{color:var(--green-light)}
+
+  /* ============ TRILHAS TEMÁTICAS (home) — cards pôster ============ */
+  .home-sec-head{margin:12px 0 16px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+  .home-sec-head h2{font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--g100)}
+  .home-sec-head p{font-size:12.5px; color:var(--g500)}
+  .trilhas-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
+  .trilha-card{position:relative; aspect-ratio:3/4; border-radius:16px; overflow:hidden; cursor:pointer; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 8px 30px rgba(0,0,0,.42); transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s}
+  .trilha-card:hover{transform:translateY(-5px); border-color:rgba(255,77,109,.5); box-shadow:0 20px 46px rgba(0,0,0,.6)}
+  .trilha-card .tc-bg{position:absolute; inset:0; z-index:0; transition:transform .55s cubic-bezier(.22,1,.36,1)}
+  .trilha-card:hover .tc-bg{transform:scale(1.07)}
+  .trilha-card .tc-bg::after{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size:28px 28px}
+  .trilha-card .tc-scrim{position:absolute; inset:0; z-index:1; background:linear-gradient(180deg, rgba(8,8,12,.12) 0%, rgba(8,8,12,.32) 42%, rgba(8,8,12,.94) 100%)}
+  .trilha-card .tc-ic{position:absolute; top:16px; right:16px; z-index:2; width:46px; height:46px; opacity:.92}
+  .trilha-card .tc-ic svg{width:100%; height:100%; stroke:rgba(255,255,255,.9); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .trilha-card .tc-count{position:absolute; top:16px; left:16px; z-index:2; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#fff; background:rgba(8,8,12,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.14); padding:4px 9px; border-radius:6px}
+  .trilha-card .tc-body{position:relative; z-index:2; padding:16px 17px 18px}
+  .trilha-card .tc-sup{font-size:12.5px; font-weight:600; color:rgba(255,255,255,.82)}
+  .trilha-card h3{font-size:23px; font-weight:900; letter-spacing:-.6px; line-height:1.02; color:var(--cyan); margin-top:2px; text-transform:uppercase}
+  .trilha-card .tc-meta{display:flex; align-items:center; gap:9px; margin-top:13px}
+  .trilha-card .tc-bar{flex:1; height:5px; background:rgba(255,255,255,.2); border-radius:99px; overflow:hidden}
+  .trilha-card .tc-fill{height:100%; background:linear-gradient(90deg, var(--green), var(--green-light)); border-radius:99px; width:0%}
+  .trilha-card .tc-pct{font-family:var(--mono); font-size:10px; font-weight:700; color:#fff; white-space:nowrap}
+
+  /* ============ TRILHA ============ */
+  .trilha{position:relative; padding-left:34px}
+  .trilha::before{content:""; position:absolute; left:11px; top:14px; bottom:14px; width:2px; background:var(--navy-soft)}
+  .etapa{position:relative; margin-bottom:14px; background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:20px 22px; transition:border-color .15s, transform .15s}
+  .etapa:hover{border-color:rgba(255,77,109,.3); transform:translateX(2px)}
+  .etapa::before{content:""; position:absolute; left:-30px; top:24px; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2.5px solid var(--g500)}
+  .etapa.done::before{background:var(--green); border-color:var(--green)}
+  .etapa.doing::before{background:var(--bg); border-color:var(--cyan); box-shadow:0 0 10px rgba(255,77,109,.55)}
+  .etapa.locked{opacity:.55}
+  .etapa.locked::before{border-color:var(--g700)}
+  .etapa-head{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .etapa-head .num{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--g500)}
+  .etapa-head h3{font-size:16.5px; font-weight:800; letter-spacing:-.2px; flex:1}
+  .etapa .desc{font-size:13px; color:var(--g500); margin-top:8px; max-width:640px}
+  .etapa .meta{display:flex; gap:16px; margin-top:12px; font-family:var(--mono); font-size:10.5px; color:var(--g500)}
+  .etapa .meta b{color:var(--g300)}
+
+  /* ============ AULAS ============ */
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px}
+  .fbtn{font-size:12px; font-weight:700; font-family:inherit; padding:8px 14px; border-radius:8px; cursor:pointer; background:var(--navy-deep); border:1px solid var(--line); color:var(--g300); transition:all .15s}
+  .fbtn:hover{border-color:var(--g500)}
+  .fbtn.on{background:var(--cyan-soft); border-color:rgba(255,77,109,.35); color:var(--cyan)}
+  .mod-section{margin-bottom:30px}
+  .mod-title{display:flex; align-items:baseline; gap:12px; margin-bottom:14px}
+  .mod-title h3{font-size:16px; font-weight:800; letter-spacing:-.2px}
+  .mod-title .cnt{font-family:var(--mono); font-size:10.5px; color:var(--g500)}
+  .aulas-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .aula-card{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:0; overflow:hidden; cursor:pointer; transition:border-color .15s, transform .15s, box-shadow .15s; display:flex; flex-direction:column}
+  .aula-card:hover{border-color:rgba(255,77,109,.35); transform:translateY(-3px); box-shadow:0 12px 34px rgba(0,0,0,.4)}
+  .aula-card.locked{cursor:not-allowed; opacity:.6}
+  .aula-card.locked:hover{transform:none; border-color:var(--line); box-shadow:none}
+  .ac-thumb{aspect-ratio:16/9; background:var(--navy); display:flex; align-items:center; justify-content:center; position:relative; border-bottom:1px solid var(--line); overflow:hidden}
+  .ac-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+  .ac-thumb .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(7,11,24,.05), rgba(7,11,24,.55))}
+  .ac-thumb::after{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(255,77,109,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(255,77,109,.04) 1px, transparent 1px); background-size:18px 18px}
+  .ac-thumb .pl{width:46px; height:46px; border-radius:50%; background:rgba(255,77,109,.12); border:1.5px solid rgba(255,77,109,.45); display:flex; align-items:center; justify-content:center; position:relative; z-index:1; transition:transform .15s, background .15s}
+  .aula-card:hover .ac-thumb .pl{transform:scale(1.08); background:rgba(255,77,109,.22)}
+  .ac-thumb .pl svg{width:15px; height:15px; fill:var(--cyan); margin-left:2px}
+  .ac-thumb.has-img .pl{background:rgba(7,11,24,.5); border-color:rgba(255,255,255,.5)}
+  .ac-thumb.has-img .pl svg{fill:#fff}
+  .aula-card.prod .ac-thumb .pl,.aula-card.locked .ac-thumb .pl{background:rgba(138,147,168,.1); border-color:var(--line)}
+  .aula-card.prod .ac-thumb .pl svg,.aula-card.locked .ac-thumb .pl svg{fill:var(--g500)}
+  .ac-thumb .dur{position:absolute; bottom:8px; right:8px; z-index:1; font-family:var(--mono); font-size:9.5px; font-weight:700; background:rgba(5,9,21,.85); color:var(--g300); padding:3px 7px; border-radius:4px}
+  .ac-thumb .done-badge{position:absolute; top:8px; left:8px; z-index:1; width:22px; height:22px; border-radius:50%; background:var(--green); display:none; align-items:center; justify-content:center}
+  .ac-thumb .done-badge svg{width:12px; height:12px; stroke:#fff; stroke-width:3; fill:none}
+  .aula-card.completed .ac-thumb .done-badge{display:flex}
+  .ac-body{padding:14px 16px 16px; display:flex; flex-direction:column; gap:8px; flex:1}
+  .ac-body .am{font-family:var(--mono); font-size:9px; letter-spacing:1.8px; text-transform:uppercase; color:var(--g500)}
+  .ac-body h4{font-size:14px; font-weight:800; line-height:1.3; letter-spacing:-.1px}
+  .ac-body p{font-size:12px; color:var(--g500); line-height:1.5; flex:1}
+  .ac-foot{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px}
+
+  /* ============ AULA (player) ============ */
+  .aula-layout{display:grid; grid-template-columns:1fr 320px; gap:20px}
+  .player{background:#000; border:1px solid var(--line); border-radius:var(--r-card); aspect-ratio:16/9; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center}
+  .player iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+  .player.placeholder{background:var(--navy)}
+  .player.placeholder::before{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(255,77,109,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(255,77,109,.04) 1px, transparent 1px); background-size:26px 26px}
+  .player .corner{position:absolute; width:18px; height:18px; pointer-events:none; z-index:2}
+  .player .corner.tl{top:10px; left:10px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan)}
+  .player .corner.tr{top:10px; right:10px; border-top:2px solid var(--cyan); border-right:2px solid var(--cyan)}
+  .player .corner.bl{bottom:10px; left:10px; border-bottom:2px solid var(--cyan); border-left:2px solid var(--cyan)}
+  .player .corner.br{bottom:10px; right:10px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan)}
+  .player .center{position:relative; text-align:center; z-index:1}
+  .player .bigplay{width:74px; height:74px; border-radius:50%; margin:0 auto 14px; background:rgba(255,77,109,.08); border:2px solid rgba(255,77,109,.45); display:flex; align-items:center; justify-content:center}
+  .player .bigplay svg{width:24px; height:24px; fill:var(--cyan); margin-left:4px}
+  .player .pv-t{font-size:14px; font-weight:800}
+  .player .pv-s{font-family:var(--mono); font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--g500); margin-top:5px}
+  /* player customizado (esconde a marca do YouTube) */
+  .player #ytFrame, .player #ytFrame iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+  .player .yt-mask{position:absolute; top:0; left:0; right:0; height:70px; z-index:3; pointer-events:none; background:linear-gradient(180deg, rgba(0,0,0,.6), transparent)}
+  .player .yt-cover{position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; cursor:pointer; background-size:cover; background-position:center}
+  .player .yt-cover::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,9,21,.4), rgba(5,9,21,.58))}
+  .player.playing .yt-cover{display:none}
+  .player .yt-cover .cp{position:relative; z-index:1; width:74px; height:74px; border-radius:50%; background:rgba(255,77,109,.18); border:2px solid rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; transition:transform .15s; backdrop-filter:blur(2px)}
+  .player .yt-cover:hover .cp{transform:scale(1.08)}
+  .player .yt-cover .cp svg{width:26px; height:26px; fill:#fff; margin-left:4px}
+  .player .yt-shield{position:absolute; inset:0; z-index:2; display:none}
+  .player.playing .yt-shield{display:block; cursor:pointer}
+  .player .yt-controls{position:absolute; left:0; right:0; bottom:0; z-index:5; padding:11px 14px; display:flex; align-items:center; gap:13px; background:linear-gradient(0deg, rgba(0,0,0,.75), transparent); opacity:0; transition:opacity .2s}
+  .player:hover .yt-controls, .player.paused .yt-controls{opacity:1}
+  .player .yt-btn{background:none; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0}
+  .player .yt-btn svg{width:20px; height:20px}
+  .player .yt-track{flex:1; height:6px; background:rgba(255,255,255,.25); border-radius:99px; cursor:pointer; position:relative}
+  .player .yt-fill{position:absolute; left:0; top:0; bottom:0; background:var(--cyan); border-radius:99px; width:0%}
+  .player .yt-time{font-family:var(--mono); font-size:11px; color:#fff; white-space:nowrap}
+  .player .yt-end{position:absolute; inset:0; z-index:6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(5,9,21,.94)}
+  .player.ended .yt-end{display:flex}
+  .aula-info{margin-top:18px}
+  .aula-info h1{font-size:23px; font-weight:900; letter-spacing:-.5px; margin:10px 0 8px}
+  .aula-info .resumo{font-size:13.5px; color:var(--g300); max-width:640px}
+  .task-box{margin-top:18px; background:rgba(232,155,60,.06); border:1px solid rgba(232,155,60,.3); border-radius:var(--r-card); padding:18px 20px}
+  .task-box .tk{font-family:var(--mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--amber); margin-bottom:8px; display:flex; align-items:center; gap:8px}
+  .task-box .tv{font-size:13.5px; line-height:1.55}
+  .aula-nav{display:flex; justify-content:space-between; gap:12px; margin-top:22px}
+  .btn{font-size:13px; font-weight:800; font-family:inherit; padding:12px 20px; border-radius:var(--r-btn); cursor:pointer; transition:all .15s; border:1px solid transparent; display:inline-flex; align-items:center; gap:8px}
+  .btn svg{width:15px; height:15px; stroke:currentColor; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .btn.ghost{background:transparent; border-color:var(--line); color:var(--g300)}
+  .btn.ghost:hover{border-color:var(--g500); color:var(--g100)}
+  .btn.green{background:var(--green); color:#fff}
+  .btn.green:hover{background:#199549}
+  .btn.cyan{background:var(--cyan-soft); border-color:rgba(255,77,109,.35); color:var(--cyan)}
+  .btn.cyan:hover{background:rgba(255,77,109,.2)}
+  .btn.amber{background:var(--amber-soft); border-color:rgba(232,155,60,.35); color:var(--amber)}
+  .btn.amber:hover{background:rgba(232,155,60,.2)}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .side-card{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:18px 20px; margin-bottom:14px}
+  .side-card .sc-k{font-family:var(--mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--g500); margin-bottom:12px}
+  .chk{list-style:none}
+  .chk li{display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:13px; border-bottom:1px dashed var(--line); cursor:pointer}
+  .chk li:last-child{border-bottom:none}
+  .chk .box{width:17px; height:17px; border-radius:5px; flex-shrink:0; margin-top:1px; border:1.5px solid var(--g500); position:relative; transition:all .15s}
+  .chk li.ok .box{background:var(--green); border-color:var(--green)}
+  .chk li.ok .box::after{content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:900}
+  .chk li.ok span{color:var(--g500); text-decoration:line-through}
+  .mat-item{display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px dashed var(--line); font-size:12.5px; font-weight:600; cursor:pointer}
+  .mat-item:last-child{border-bottom:none}
+  .mat-item:hover{color:var(--cyan)}
+  .mat-item svg{width:15px; height:15px; stroke:var(--g500); stroke-width:2; fill:none; flex-shrink:0}
+  .mat-item .badge-soon{margin-left:auto; font-family:var(--mono); font-size:8.5px; letter-spacing:1px; color:var(--amber); text-transform:uppercase}
+
+  /* ============ SCRIPTS ============ */
+  .scripts-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .script-card{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:18px 20px; transition:border-color .15s; display:flex; flex-direction:column; gap:10px}
+  .script-card:hover{border-color:rgba(255,77,109,.3)}
+  .script-card .sh{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .script-card h4{font-size:14px; font-weight:800; flex:1}
+  .script-txt{background:var(--bg); border-left:2.5px solid var(--green); border-radius:0 8px 8px 0; padding:13px 16px; font-size:13px; line-height:1.6; color:var(--g300); font-style:italic}
+  .script-txt b{color:var(--g100); font-style:normal}
+  .copy-btn{align-self:flex-start; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; padding:7px 13px; border-radius:7px; background:transparent; border:1px solid var(--line); color:var(--g500); cursor:pointer; transition:all .15s}
+  .copy-btn:hover{border-color:var(--cyan); color:var(--cyan)}
+  .copy-btn.copied{border-color:var(--green); color:var(--green-light)}
+
+  .cl-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+  /* ============ PGM ============ */
+  .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px}
+  .kpi{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:18px 20px; position:relative; overflow:hidden}
+  .kpi .k{font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--g500)}
+  .kpi .v{font-family:var(--mono); font-size:24px; font-weight:700; margin-top:8px; letter-spacing:-.5px}
+  .kpi .d{font-family:var(--mono); font-size:10.5px; margin-top:5px}
+  .kpi .d.up{color:var(--green-light)}
+  .kpi .d.dn{color:var(--red)}
+  .kpi .d.nt{color:var(--g500)}
+  .gargalo{background:rgba(230,57,86,.06); border:1px solid rgba(230,57,86,.35); border-radius:var(--r-card); padding:20px 24px; margin-bottom:18px; display:flex; gap:16px; align-items:flex-start}
+  .gargalo .gi{width:38px; height:38px; border-radius:9px; flex-shrink:0; background:rgba(230,57,86,.12); border:1px solid rgba(230,57,86,.3); display:flex; align-items:center; justify-content:center}
+  .gargalo .gi svg{width:18px; height:18px; stroke:var(--red); stroke-width:2; fill:none}
+  .gargalo .gk{font-family:var(--mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--red); margin-bottom:5px}
+  .gargalo .gv{font-size:14.5px; font-weight:800; line-height:1.4}
+  .gargalo .gs{font-size:12.5px; color:var(--g300); margin-top:5px}
+  .funil{display:flex; flex-direction:column; gap:9px}
+  .funil-row{display:flex; align-items:center; gap:14px}
+  .funil-row .fl{font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--g500); width:96px; flex-shrink:0}
+  .funil-row .fb{flex:1; height:26px; background:var(--navy); border-radius:6px; overflow:hidden; position:relative}
+  .funil-row .ff{height:100%; border-radius:6px; background:linear-gradient(90deg, rgba(255,77,109,.55), rgba(255,77,109,.25)); display:flex; align-items:center; padding:0 10px}
+  .funil-row.warn .ff{background:linear-gradient(90deg, rgba(230,57,86,.55), rgba(230,57,86,.22))}
+  .funil-row .fn{font-family:var(--mono); font-size:10.5px; font-weight:700; color:var(--g100)}
+
+  /* ============ 90 DIAS ============ */
+  .t90{position:relative; padding-left:34px}
+  .t90::before{content:""; position:absolute; left:11px; top:16px; bottom:16px; width:2px; background:var(--navy-soft)}
+  .t90-item{position:relative; margin-bottom:16px; background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:20px 24px}
+  .t90-item::before{content:""; position:absolute; left:-30px; top:26px; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2.5px solid var(--g500)}
+  .t90-item.done::before{background:var(--green); border-color:var(--green)}
+  .t90-item.now{border-color:rgba(255,77,109,.4)}
+  .t90-item.now::before{border-color:var(--cyan); box-shadow:0 0 10px rgba(255,77,109,.55)}
+  .t90-item .th{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px}
+  .t90-item .tp{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--cyan); letter-spacing:1px}
+  .t90-item h3{font-size:16px; font-weight:800; flex:1}
+  .t90-item p{font-size:13px; color:var(--g500); max-width:620px}
+  .t90-item ul{margin:10px 0 0; padding-left:0; list-style:none}
+  .t90-item ul li{font-size:12.5px; color:var(--g300); padding:4px 0; display:flex; gap:9px; align-items:flex-start}
+  .t90-item ul li::before{content:""; width:5px; height:5px; border-radius:50%; background:var(--cyan); margin-top:7px; flex-shrink:0}
+
+  /* ============ EMPTY ============ */
+  .empty{background:var(--navy-deep); border:1px dashed var(--navy-soft); border-radius:var(--r-card); padding:40px 28px; text-align:center}
+  .empty .ei{width:52px; height:52px; border-radius:12px; margin:0 auto 16px; background:var(--navy); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative}
+  .empty .ei::before{content:""; position:absolute; top:4px; left:4px; width:8px; height:8px; border-top:1.5px solid var(--cyan); border-left:1.5px solid var(--cyan)}
+  .empty .ei svg{width:22px; height:22px; stroke:var(--g500); stroke-width:1.8; fill:none}
+  .empty h4{font-size:15px; font-weight:800; margin-bottom:6px}
+  .empty p{font-size:12.5px; color:var(--g500); max-width:380px; margin:0 auto}
+  .mat-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+
+  /* ============ ADMIN (gerir aulas) ============ */
+  .admin-grid{display:grid; grid-template-columns:380px 1fr; gap:20px; align-items:start}
+  .admin-form{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:22px; position:sticky; top:88px}
+  .admin-form .af-k{font-family:var(--mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--amber); margin-bottom:16px}
+  .ff-row{margin-bottom:13px}
+  .ff-row.two{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .ff-row label{display:block; font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--g500); margin-bottom:6px}
+  .ff-row input,.ff-row select,.ff-row textarea{width:100%; padding:10px 12px; font-size:13px; font-family:inherit; background:var(--bg); border:1px solid var(--line); border-radius:9px; color:var(--g100); transition:border-color .15s}
+  .ff-row textarea{resize:vertical; min-height:60px; line-height:1.5}
+  .ff-row input:focus,.ff-row select:focus,.ff-row textarea:focus{outline:none; border-color:var(--cyan)}
+  .ff-row .hint{font-size:10.5px; color:var(--g500); margin-top:5px; line-height:1.4}
+  .ff-row .hint.ok{color:var(--green-light)}
+  .ff-actions{display:flex; gap:9px; margin-top:6px}
+  .yt-preview{margin-top:10px; aspect-ratio:16/9; border-radius:9px; overflow:hidden; border:1px solid var(--line); display:none; background:var(--navy)}
+  .yt-preview.on{display:block}
+  .yt-preview img{width:100%; height:100%; object-fit:cover}
+  .admin-list .al-item{display:flex; align-items:center; gap:13px; background:var(--navy-deep); border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:10px; transition:border-color .15s}
+  .admin-list .al-item:hover{border-color:rgba(255,77,109,.3)}
+  .admin-list .al-thumb{width:74px; height:44px; border-radius:7px; flex-shrink:0; overflow:hidden; background:var(--navy); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative}
+  .admin-list .al-thumb img{width:100%; height:100%; object-fit:cover}
+  .admin-list .al-thumb svg{width:13px; height:13px; fill:var(--g500)}
+  .admin-list .al-meta{flex:1; min-width:0}
+  .admin-list .al-meta b{font-size:13px; font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .admin-list .al-meta span{font-family:var(--mono); font-size:9.5px; color:var(--g500); letter-spacing:.5px}
+  .admin-list .al-yt{color:var(--green-light)}
+  .admin-list .al-yt.no{color:var(--amber)}
+  .admin-list .al-act{display:flex; gap:6px; flex-shrink:0}
+  .icon-btn{width:32px; height:32px; border-radius:8px; background:transparent; border:1px solid var(--line); color:var(--g500); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s}
+  .icon-btn:hover{border-color:var(--cyan); color:var(--cyan)}
+  .icon-btn.del:hover{border-color:var(--red); color:var(--red)}
+  .icon-btn svg{width:15px; height:15px; stroke:currentColor; stroke-width:2; fill:none}
+  .admin-bar{display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap}
+  .admin-bar .ab-count{font-family:var(--mono); font-size:11px; color:var(--g500)}
+  /* repetidor de materiais no admin */
+  .mat-row{display:grid; grid-template-columns:1fr 34px; gap:8px; margin-bottom:9px; align-items:start}
+  .mat-row .mr-fields{display:flex; flex-direction:column; gap:6px}
+  .mat-row input{width:100%; padding:9px 11px; font-size:12.5px; font-family:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--g100)}
+  .mat-row input:focus{outline:none; border-color:var(--cyan)}
+  .mat-empty{font-size:11.5px; color:var(--g500); padding:2px 0 6px}
+  /* materiais clicáveis na página da aula */
+  a.mat-item{text-decoration:none; color:var(--g300)}
+  .mat-item .dl{margin-left:auto; font-family:var(--mono); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:var(--cyan); border:1px solid rgba(255,77,109,.3); padding:3px 8px; border-radius:5px; flex-shrink:0}
+
+  /* toast */
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); z-index:200; background:var(--navy); border:1px solid rgba(111,230,158,.4); color:var(--g100); font-size:13px; font-weight:700; padding:12px 20px; border-radius:11px; box-shadow:0 12px 40px rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:all .3s; display:flex; align-items:center; gap:10px}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast svg{width:16px; height:16px; stroke:var(--green-light); stroke-width:2.4; fill:none}
+
+  /* responsivo */
+  @media(max-width:1080px){
+    .aulas-grid{grid-template-columns:1fr 1fr}
+    .kpi-grid{grid-template-columns:1fr 1fr}
+    .dash-hero{grid-template-columns:1fr}
+    .dash-cols{grid-template-columns:1fr}
+    .aula-layout{grid-template-columns:1fr}
+    .mat-grid{grid-template-columns:1fr 1fr}
+    .admin-grid{grid-template-columns:1fr}
+    .admin-form{position:static}
+    .trilhas-grid{grid-template-columns:repeat(3,1fr)}
+  }
+  @media(max-width:840px){
+    .app.on{grid-template-columns:1fr}
+    .sidebar{position:fixed; z-index:60; transform:translateX(-100%); transition:transform .3s cubic-bezier(.22,1,.36,1); width:260px; box-shadow:8px 0 40px rgba(0,0,0,.5)}
+    body.menu-open .sidebar{transform:none}
+    .menu-btn{display:flex !important}
+    .scripts-grid,.cl-grid,.aulas-grid,.mat-grid{grid-template-columns:1fr}
+    .trilhas-grid{grid-template-columns:repeat(2,1fr); gap:12px}
+    .dash-grid{grid-template-columns:1fr}
+    .top-status .status-chip span,.prog-mini{display:none}
+    .view{padding:20px 16px 50px}
+  }
+  .back-btn{display:none; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:9px; background:var(--navy-deep); border:1px solid var(--line); color:var(--g300); cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:700; flex-shrink:0}
+  .back-btn svg{width:16px; height:16px; stroke:currentColor; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .back-btn:hover{border-color:var(--cyan); color:var(--cyan)}
+  /* ===== Métricas (admin) ===== */
+  .metric-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px}
+  .m-tile{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:16px 18px}
+  .m-tile .k{font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--g500)}
+  .m-tile .v{font-size:22px; font-weight:900; margin-top:7px; letter-spacing:-.4px}
+  .m-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-card); background:var(--navy-deep)}
+  .mtable{width:100%; border-collapse:collapse; min-width:720px}
+  .mtable th{font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--g500); text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); white-space:nowrap}
+  .mtable td{padding:13px 16px; border-bottom:1px solid var(--line); font-size:13px; white-space:nowrap}
+  .mtable tr:last-child td{border-bottom:none}
+  .mtable tbody tr:hover td{background:rgba(255,77,109,.05)}
+  .mtable .u{display:flex; align-items:center; gap:10px}
+  .mtable .u .av{width:30px; height:30px; border-radius:8px; background:var(--navy); border:1px solid var(--cyan-soft); color:var(--cyan); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0}
+  .mtable .num{font-family:var(--mono); font-weight:700}
+  .eng{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:4px 9px; border-radius:5px}
+  .eng .dot{width:5px; height:5px; border-radius:50%; background:currentColor}
+  .eng.on{background:rgba(111,230,158,.1); color:var(--green-light); border:1px solid rgba(111,230,158,.25)}
+  .eng.mid{background:rgba(232,155,60,.1); color:var(--amber); border:1px solid rgba(232,155,60,.3)}
+  .eng.off{background:rgba(138,147,168,.1); color:var(--g500); border:1px solid var(--line)}
+  /* seletor de empresa (sidebar) — estilo workspace */
+  .emp-switch{padding:8px 8px 6px; margin-bottom:4px; position:relative}
+  .emp-switch .es-label{font-family:var(--mono); font-size:8px; letter-spacing:2.2px; text-transform:uppercase; color:var(--g500); margin:0 0 6px 6px}
+  .es-btn{width:100%; display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--bg); border:1px solid var(--line); border-radius:10px; cursor:pointer; font-family:inherit; text-align:left; transition:border-color .15s}
+  .es-btn:hover{border-color:var(--g500)}
+  .es-btn .es-ico{width:26px; height:26px; border-radius:7px; background:var(--cyan-soft); border:1px solid rgba(255,77,109,.3); display:flex; align-items:center; justify-content:center; flex-shrink:0}
+  .es-btn .es-ico svg{width:15px; height:15px; stroke:var(--cyan); stroke-width:2; fill:none}
+  .es-btn .es-name{flex:1; font-size:13px; font-weight:800; color:var(--g100); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .es-btn .es-chev{width:15px; height:15px; stroke:var(--g500); stroke-width:2.2; fill:none; flex-shrink:0; transition:transform .18s}
+  .emp-switch.open .es-btn .es-chev{transform:rotate(180deg)}
+  .es-menu{display:none; position:absolute; left:8px; right:8px; top:100%; z-index:70; margin-top:4px; background:var(--navy-deep); border:1px solid var(--line); border-radius:11px; padding:6px; box-shadow:0 16px 40px rgba(0,0,0,.55); max-height:300px; overflow-y:auto}
+  .emp-switch.open .es-menu{display:block}
+  .es-item{display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; border-radius:8px; background:transparent; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:var(--g300); text-align:left}
+  .es-item:hover{background:rgba(255,77,109,.07); color:var(--g100)}
+  .es-item.on{color:var(--green-light)}
+  .es-item .mk{width:22px; height:22px; border-radius:6px; background:var(--navy); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--cyan); flex-shrink:0}
+  .es-item .es-check{margin-left:auto; width:15px; height:15px; stroke:var(--green-light); stroke-width:2.6; fill:none; opacity:0; flex-shrink:0}
+  .es-item.on .es-check{opacity:1}
+  @media(max-width:1080px){ .metric-tiles{grid-template-columns:1fr 1fr} }
+
+  .menu-btn{display:none; width:38px; height:38px; border-radius:9px; background:var(--navy-deep); border:1px solid var(--line); align-items:center; justify-content:center; cursor:pointer; flex-shrink:0}
+  .menu-btn svg{width:18px; height:18px; stroke:var(--g300); stroke-width:2; fill:none; stroke-linecap:round}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="auth-screen" id="authScreen">
+  <form class="auth-card" id="authForm" autocomplete="off">
+    <div class="auth-brand">
+      <div class="mark"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <div class="t">Central Prisma<small>Método · Implantação</small></div>
+    </div>
+    <h1>Bem-vindo à sua central.</h1>
+    <p class="lead">Aqui está o método completo da Prisma pra instalar na sua operação — aulas, scripts e acompanhamento, num lugar só.</p>
+
+    <div class="fld">
+      <label>E-mail</label>
+      <input type="email" id="authEmail" placeholder="voce@empresa.com" autocomplete="username">
+    </div>
+    <div class="fld">
+      <label>Senha</label>
+      <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button type="submit" class="auth-btn">
+      Entrar na plataforma
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <div class="auth-err" id="authErr">E-mail ou senha incorretos. Confira e tente novamente.</div>
+
+    <div class="auth-foot">
+      <b>Acesso exclusivo de cliente Prisma.</b> Não tem acesso? Fale com seu contato na Prisma — o cadastro é feito por nós.
+    </div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="app">
+
+<!-- ============ SIDEBAR ============ -->
+<nav class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <div class="t">Central Prisma<small>Método · Implantação</small></div>
+  </div>
+
+  <div class="emp-switch" id="empSwitch" style="display:none">
+    <div class="es-label">Empresa</div>
+    <button class="es-btn" id="empBtn" type="button">
+      <span class="es-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg></span>
+      <span class="es-name" id="empName">—</span>
+      <svg class="es-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="es-menu" id="empMenu"></div>
+  </div>
+
+  <div class="nav-label">Plataforma</div>
+  <button class="nav-item active" data-view="inicio">
+    <svg viewBox="0 0 24 24"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V9.5z"/></svg>
+    Início
+  </button>
+  <button class="nav-item" data-view="trilha">
+    <svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.2"/><circle cx="18" cy="12" r="2.2"/><circle cx="6" cy="19" r="2.2"/><path d="M8 5h6a4 4 0 0 1 0 8H10a4 4 0 0 0 0 8h4"/></svg>
+    Trilha de implantação
+  </button>
+  <button class="nav-item" data-view="aulas">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3V9z"/></svg>
+    Aulas
+  </button>
+  <button class="nav-item" data-view="scripts">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-4-7.5"/><path d="M8 10h8M8 14h5"/></svg>
+    Scripts
+  </button>
+  <button class="nav-item" data-view="checklists">
+    <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 11 2 2 4-4"/><path d="M8.5 17H15"/></svg>
+    Checklists
+  </button>
+
+  <div class="nav-label">Operação</div>
+  <button class="nav-item" data-view="pgm">
+    <svg viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3.4" height="7" rx="0.8"/><rect x="10.3" y="7" width="3.4" height="11" rx="0.8"/><rect x="15.6" y="3.5" width="3.4" height="14.5" rx="0.8"/></svg>
+    PGM · Indicadores
+  </button>
+  <button class="nav-item" data-view="dias90">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    90 dias
+  </button>
+  <button class="nav-item" data-view="materiais">
+    <svg viewBox="0 0 24 24"><path d="M4 4h6l2 3h8v13H4V4z"/></svg>
+    Materiais
+  </button>
+
+  <div class="nav-label admin-only" style="display:none">Gestão · Prisma</div>
+  <button class="nav-item nav-admin admin-only" data-view="gerir" style="display:none">
+    <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>
+    Gerir aulas
+  </button>
+  <button class="nav-item nav-admin admin-only" data-view="empresas" style="display:none">
+    <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/></svg>
+    Empresas e acessos
+  </button>
+  <button class="nav-item nav-admin admin-only" data-view="metricas" style="display:none">
+    <svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>
+    Métricas
+  </button>
+
+  <div class="side-user">
+    <div class="u-chip">
+      <div class="u-av" id="sideAv">F</div>
+      <div class="u-meta">
+        <div class="u-name" id="sideName">Ferraço</div>
+        <div class="u-role" id="sideRole">Cliente</div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sair
+    </button>
+  </div>
+</nav>
+
+<!-- ============ CONTENT ============ -->
+<div class="content">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <button class="back-btn" id="backBtn" title="Voltar" style="display:none"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Voltar</button>
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="globalSearch" type="text" placeholder="Buscar aula, script, checklist ou material…">
+      <span class="kbd">/</span>
+    </div>
+    <div class="top-status">
+      <div class="status-chip"><span class="pulse"></span><span>Implantação ativa</span></div>
+      <div class="prog-mini" title="Sua jornada de implantação"><div class="bar"><div class="fill" id="topFill"></div></div><span class="n" id="topPct">0%</span><span class="pl-lbl">concluído</span></div>
+      <div class="avatar" id="topAv">F</div>
+    </div>
+  </header>
+
+  <!-- ============ VIEW: INÍCIO ============ -->
+  <section class="view on" id="v-inicio">
+    <div class="welcome">
+      <div class="mono-label">Método Prisma · Aquisição, conversão e acompanhamento</div>
+      <h2 id="welcomeGreet">Bem-vindo à sua central de implantação.</h2>
+      <p>Aqui dentro está o método completo: aulas, scripts, checklists e o acompanhamento dos seus primeiros 90 dias. Siga a trilha — cada etapa prepara a próxima.</p>
+      <div class="continue" id="continueCard">
+        <div class="ct-thumb" id="continueThumb"><div class="pl2"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
+        <div class="ct-meta">
+          <div class="ct-k" id="continueK">Continue de onde parou</div>
+          <div class="ct-t" id="continueT">Sondagem — os 4 Pilares</div>
+          <div class="ct-s" id="continueS">WhatsApp e atendimento · 9 min</div>
+        </div>
+        <div class="go"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+
+    <div class="home-sec-head">
+      <h2>Trilhas do método</h2>
+      <p>Cada trilha resolve uma dor do comercial. Escolha e siga na ordem.</p>
+    </div>
+    <div class="trilhas-grid" id="trilhasWrap"></div>
+  </section>
+
+  <!-- ============ VIEW: TRILHA ============ -->
+  <section class="view" id="v-trilha">
+    <div class="view-head">
+      <div class="crumb">Etapa da implantação</div>
+      <h1>Trilha de implantação</h1>
+      <div class="sub">A instalação do método segue esta ordem. Cada etapa concluída prepara a próxima — nada aqui é opcional, é sequência.</div>
+    </div>
+    <div class="trilha">
+      <div class="etapa done"><div class="etapa-head"><span class="num">01</span><h3>Diagnóstico 360</h3><span class="tag green"><span class="dot"></span>Concluído</span></div><div class="desc">Produto foco, região, comprador, margem, estrutura comercial e gargalo atual mapeados.</div><div class="meta"><span>Entrega: <b>relatório 360</b></span><span>Duração: <b>semana 1</b></span></div></div>
+      <div class="etapa doing"><div class="etapa-head"><span class="num">02</span><h3>Oferta e campanha</h3><span class="tag cyan"><span class="dot"></span>Em andamento</span></div><div class="desc">Produto âncora, promessa, público prioritário e caminho até o WhatsApp definidos com base no diagnóstico.</div><div class="meta"><span>Entrega: <b>plano de campanha</b></span><span>Status: <b>aprovação de oferta</b></span></div></div>
+      <div class="etapa"><div class="etapa-head"><span class="num">03</span><h3>Anúncios e criativos</h3><span class="tag cyan"><span class="dot"></span>Disponível</span></div><div class="desc">Copy, criativos, roteiros de vídeo e variações para teste. A Prisma produz, você aprova rápido.</div><div class="meta"><span>Entrega: <b>kit de anúncios</b></span></div></div>
+      <div class="etapa"><div class="etapa-head"><span class="num">04</span><h3>WhatsApp e comercial</h3><span class="tag amber"><span class="dot"></span>Em produção</span></div><div class="desc">Treinamento do time, organização do funil, SLA de resposta e método dos 9 Passos aplicado nas conversas reais.</div><div class="meta"><span>Entrega: <b>aulas + manual</b></span></div></div>
+      <div class="etapa"><div class="etapa-head"><span class="num">05</span><h3>Scripts e follow-up</h3><span class="tag amber"><span class="dot"></span>Em produção</span></div><div class="desc">Scripts prontos por situação e régua D+1 · D+3 · D+5 · D+7 instalada na rotina do vendedor.</div><div class="meta"><span>Entrega: <b>biblioteca de scripts</b></span></div></div>
+      <div class="etapa locked"><div class="etapa-head"><span class="num">06</span><h3>Indicadores e PGM</h3><span class="tag gray"><span class="dot"></span>Bloqueado</span></div><div class="desc">Os 12 KPIs do comercial rodando: do investimento ao faturamento, com leitura semanal de gargalo.</div><div class="meta"><span>Libera após: <b>etapa 04</b></span></div></div>
+      <div class="etapa locked"><div class="etapa-head"><span class="num">07</span><h3>Ajustes de 30, 60 e 90 dias</h3><span class="tag gray"><span class="dot"></span>Bloqueado</span></div><div class="desc">Reavaliação de gargalos, correção de rota e abertura da frente de ticket médio.</div><div class="meta"><span>Libera após: <b>D+30</b></span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: AULAS ============ -->
+  <section class="view" id="v-aulas">
+    <div class="view-head">
+      <div class="crumb" id="aulasCrumb">Biblioteca</div>
+      <h1 id="aulasTitle">Aulas</h1>
+      <div class="sub" id="aulasSub">Conteúdo direto, sem enrolação. Cada aula termina em aplicação — assista e execute na mesma semana.</div>
+    </div>
+    <div class="filters tchips" id="trilhaFilters"></div>
+    <div class="filters" id="aulaFilters">
+      <button class="fbtn on" data-f="all">Todas</button>
+      <button class="fbtn" data-f="disponivel">Disponíveis</button>
+      <button class="fbtn" data-f="producao">Em produção</button>
+    </div>
+    <div id="aulasWrap"></div>
+  </section>
+
+  <!-- ============ VIEW: AULA (player dinâmico) ============ -->
+  <section class="view" id="v-aula"></section>
+
+  <!-- ============ VIEW: SCRIPTS ============ -->
+  <section class="view" id="v-scripts">
+    <div class="view-head">
+      <div class="crumb">Arsenal comercial</div>
+      <h1>Scripts de WhatsApp</h1>
+      <div class="sub">Prontos para copiar e usar hoje. Troque o nome, mantenha a estrutura — todo script termina puxando o próximo passo.</div>
+    </div>
+    <div class="scripts-grid" id="scriptsWrap"></div>
+  </section>
+
+  <!-- ============ VIEW: CHECKLISTS ============ -->
+  <section class="view" id="v-checklists">
+    <div class="view-head">
+      <div class="crumb">Execução</div>
+      <h1>Checklists</h1>
+      <div class="sub">O método vira rotina aqui. Marque durante a operação — não de memória, no fim do dia.</div>
+    </div>
+    <div class="cl-grid">
+      <div class="side-card" style="margin:0"><div class="sc-k">Primeiro atendimento</div><ul class="chk"><li><span class="box"></span><span>Respondi em até 5 minutos</span></li><li><span class="box"></span><span>Saudação com pergunta que o cliente responde</span></li><li><span class="box"></span><span>2+ pilares antes do preço</span></li><li><span class="box"></span><span>Preço saiu com gancho e pergunta</span></li></ul></div>
+      <div class="side-card" style="margin:0"><div class="sc-k">Organização do WhatsApp</div><ul class="chk"><li><span class="box"></span><span>Etiquetas do funil aplicadas</span></li><li><span class="box"></span><span>Sinal quente no topo da fila</span></li><li><span class="box"></span><span>Nenhuma conversa sem etapa</span></li><li><span class="box"></span><span>Motivo de perda registrado</span></li></ul></div>
+      <div class="side-card" style="margin:0"><div class="sc-k">Rotina do vendedor</div><ul class="chk"><li><span class="box"></span><span>Manhã: fila de follow-up do dia</span></li><li><span class="box"></span><span>Tarde: retomadas D+3 e D+5</span></li><li><span class="box"></span><span>Fim do dia: etiquetas e registros</span></li></ul></div>
+      <div class="side-card" style="margin:0"><div class="sc-k">Rotina do gestor</div><ul class="chk"><li><span class="box"></span><span>2x/semana: ler 2 conversas com o checklist</span></li><li><span class="box"></span><span>Feedback devolvido no mesmo dia</span></li><li><span class="box"></span><span>1 caso bom + 1 a corrigir por semana</span></li></ul></div>
+      <div class="side-card" style="margin:0"><div class="sc-k">Follow-up</div><ul class="chk"><li><span class="box"></span><span>D+1 lembrete leve enviado</span></li><li><span class="box"></span><span>D+3 com motivo novo (nunca repetido)</span></li><li><span class="box"></span><span>D+5 áudio ou ligação</span></li><li><span class="box"></span><span>D+7 encerramento honesto</span></li></ul></div>
+      <div class="side-card" style="margin:0"><div class="sc-k">Revisão semanal · PGM</div><ul class="chk"><li><span class="box"></span><span>PGM preenchida até sexta 18h</span></li><li><span class="box"></span><span>Taxa orçamento → venda lida</span></li><li><span class="box"></span><span>Gargalo da semana nomeado</span></li><li><span class="box"></span><span>1 ação corretiva definida</span></li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: PGM ============ -->
+  <section class="view" id="v-pgm">
+    <div class="view-head">
+      <div class="crumb">Leitura de operação</div>
+      <h1>PGM · Indicadores</h1>
+      <div class="sub">Do investimento ao faturamento. Os números abaixo são demonstrativos — sua PGM alimenta esta tela toda semana.</div>
+    </div>
+    <div class="gargalo">
+      <div class="gi"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+      <div><div class="gk">Gargalo atual · conversão comercial</div><div class="gv">Orçamentos saem, mas 71% morrem sem follow-up completo.</div><div class="gs">A campanha está entregando. O vazamento é depois do PDF — régua D+1 a D+7 é a correção desta semana.</div></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="k">Leads</div><div class="v">128</div><div class="d up">▲ 12% vs semana anterior</div></div>
+      <div class="kpi"><div class="k">Orçamentos</div><div class="v">54</div><div class="d up">▲ 8%</div></div>
+      <div class="kpi"><div class="k">Vendas</div><div class="v">11</div><div class="d dn">▼ 3 vs meta</div></div>
+      <div class="kpi"><div class="k">Conversão orç → venda</div><div class="v">20,4%</div><div class="d nt">meta: 30%</div></div>
+      <div class="kpi"><div class="k">Ticket médio</div><div class="v">R$ 8,4k</div><div class="d up">▲ R$ 600</div></div>
+      <div class="kpi"><div class="k">Faturamento</div><div class="v">R$ 92,7k</div><div class="d up">▲ 9%</div></div>
+      <div class="kpi"><div class="k">ROAS</div><div class="v">11,2x</div><div class="d up">saudável &gt; 3x</div></div>
+      <div class="kpi"><div class="k">1ª resposta</div><div class="v">7 min</div><div class="d nt">meta: ≤ 5 min</div></div>
+    </div>
+    <div class="panel tick">
+      <div class="panel-k">Funil da semana · onde o dinheiro vaza</div>
+      <div class="funil">
+        <div class="funil-row"><span class="fl">Leads</span><div class="fb"><div class="ff" style="width:100%"><span class="fn">128</span></div></div></div>
+        <div class="funil-row"><span class="fl">Orçamentos</span><div class="fb"><div class="ff" style="width:42%"><span class="fn">54</span></div></div></div>
+        <div class="funil-row warn"><span class="fl">Follow-up</span><div class="fb"><div class="ff" style="width:16%"><span class="fn">21 · régua completa</span></div></div></div>
+        <div class="funil-row"><span class="fl">Vendas</span><div class="fb"><div class="ff" style="width:9%"><span class="fn">11</span></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: 90 DIAS ============ -->
+  <section class="view" id="v-dias90">
+    <div class="view-head">
+      <div class="crumb">Acompanhamento</div>
+      <h1>Os primeiros 90 dias</h1>
+      <div class="sub">A implantação tem rampa. Resultado não aparece completo no mês 1 — aparece quando o método vira rotina cobrada.</div>
+    </div>
+    <div class="t90">
+      <div class="t90-item done"><div class="th"><span class="tp">SEMANA 1</span><h3>Diagnóstico e configuração</h3><span class="tag green"><span class="dot"></span>Concluído</span></div><p>Fundação da máquina: baseline registrado e campanha estruturada.</p><ul><li>Diagnóstico 360 + baseline dos números atuais</li><li>Definição de oferta, público e região</li><li>SLA de resposta e responsável pelo WhatsApp</li></ul></div>
+      <div class="t90-item now"><div class="th"><span class="tp">SEMANAS 2–4</span><h3>Operação assistida</h3><span class="tag cyan"><span class="dot"></span>Você está aqui</span></div><p>Campanha no ar, time treinando, leitura semanal dos números com a Prisma do lado.</p><ul><li>Aulas do módulo comercial aplicadas nas conversas reais</li><li>Scripts e régua de follow-up em uso</li><li>PGM preenchida toda sexta</li></ul></div>
+      <div class="t90-item"><div class="th"><span class="tp">D+30</span><h3>Reavaliação</h3><span class="tag gray"><span class="dot"></span>Aguardando</span></div><p>Primeiro diagnóstico comercial com prints reais: onde o método pegou e onde ainda vaza.</p></div>
+      <div class="t90-item"><div class="th"><span class="tp">D+60</span><h3>Correção e ticket médio</h3><span class="tag gray"><span class="dot"></span>Aguardando</span></div><p>Funil rodando → abre a terceira alavanca: produto âncora, cross-sell e foco em comprador melhor.</p></div>
+      <div class="t90-item"><div class="th"><span class="tp">D+90</span><h3>Consolidação e próximos passos</h3><span class="tag gray"><span class="dot"></span>Aguardando</span></div><p>Comparativo trimestral: baseline vs agora, ROAS, e decisão do próximo ciclo de crescimento.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: MATERIAIS ============ -->
+  <section class="view" id="v-materiais">
+    <div class="view-head">
+      <div class="crumb">Biblioteca de apoio</div>
+      <h1>Materiais</h1>
+      <div class="sub">PDFs, cards de bolso e modelos. Cada material é liberado na etapa certa da trilha — nada chega antes da hora de usar.</div>
+    </div>
+    <div class="mat-grid">
+      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/><path d="M9 13h6M9 17h4"/></svg></div><h4>Manual 9 Passos</h4><p>Em produção pela Prisma. Será liberado junto com o módulo WhatsApp e comercial.</p></div>
+      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div><h4>Modelo de PGM</h4><p>Planilha oficial de acompanhamento. Liberada na etapa Indicadores e PGM.</p></div>
+      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><h4>Cards de bolso</h4><p>4 Pilares, régua de follow-up e 6 fechamentos para imprimir. Prepare seu time para aplicar este módulo.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: GERIR AULAS (admin) ============ -->
+  <section class="view" id="v-gerir">
+    <div class="view-head">
+      <div class="crumb">Gestão · somente Prisma</div>
+      <h1>Gerir aulas</h1>
+      <div class="sub">Cadastre uma aula e cole o link do YouTube — ela aparece na plataforma na hora, tocando dentro da Central. É assim que você "pluga" cada aula gravada.</div>
+    </div>
+    <div class="admin-grid">
+      <form class="admin-form" id="adminForm" autocomplete="off">
+        <div class="af-k" id="afTitle">＋ Nova aula</div>
+        <input type="hidden" id="afId">
+        <div class="ff-row">
+          <label>Título da aula</label>
+          <input type="text" id="afT" placeholder="Ex.: Sondagem — os 4 Pilares">
+        </div>
+        <div class="ff-row">
+          <label>Link do YouTube</label>
+          <input type="text" id="afYt" placeholder="Cole o link do vídeo (ou deixe vazio = em produção)">
+          <div class="hint" id="afYtHint">Aceita youtube.com/watch, youtu.be ou link "não listado".</div>
+          <div class="yt-preview" id="afYtPrev"><img id="afYtImg" alt=""></div>
+        </div>
+        <div class="ff-row">
+          <label>Módulo</label>
+          <input list="modList" id="afMod" placeholder="Escolha ou digite um módulo">
+          <datalist id="modList"></datalist>
+        </div>
+        <div class="ff-row two">
+          <div><label>Duração</label><input type="text" id="afDur" placeholder="9 min"></div>
+          <div><label>Área</label>
+            <select id="afArea"><option value="comercial">Comercial</option><option value="trafego">Tráfego</option><option value="indicadores">Indicadores</option></select>
+          </div>
+        </div>
+        <div class="ff-row two">
+          <div><label>Status</label>
+            <select id="afSt"><option value="disponivel">Disponível</option><option value="producao">Em produção</option><option value="bloqueado">Bloqueado</option></select>
+          </div>
+          <div><label>Destaque</label>
+            <select id="afTag"><option value="">Nenhum</option><option value="essencial">Material essencial</option><option value="semana">Aplicar nesta semana</option></select>
+          </div>
+        </div>
+        <div class="ff-row">
+          <label>Descrição curta</label>
+          <textarea id="afD" placeholder="1 ou 2 linhas — aparece no card da aula."></textarea>
+        </div>
+        <div class="ff-row">
+          <label>Resumo da aula</label>
+          <textarea id="afResumo" placeholder="Texto completo que aparece na página da aula, embaixo do vídeo." style="min-height:80px"></textarea>
+          <div class="hint">Mais completo que a descrição — é o que o cliente lê ao abrir a aula.</div>
+        </div>
+        <div class="ff-row">
+          <label>Materiais para download (PDF, planilha, card…)</label>
+          <div id="afMats"></div>
+          <button type="button" class="btn ghost" id="afAddMat" style="margin-top:6px; width:100%; justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar material</button>
+          <div class="hint">Cole o link do arquivo (Google Drive, Dropbox, etc.). Na Fase 2, com o Supabase, dá pra subir o PDF direto aqui.</div>
+        </div>
+        <div class="ff-actions">
+          <button type="submit" class="btn green" id="afSave" style="flex:1; justify-content:center"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar aula</button>
+          <button type="button" class="btn ghost" id="afClear">Limpar</button>
+        </div>
+      </form>
+
+      <div>
+        <div class="admin-bar">
+          <span class="ab-count" id="adminCount">0 aulas</span>
+          <button class="btn ghost" id="adminReset" style="margin-left:auto"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Restaurar padrão</button>
+        </div>
+        <div class="admin-list" id="adminList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW: EMPRESAS E ACESSOS (admin) ============ -->
+  <section class="view" id="v-empresas">
+    <div class="view-head">
+      <div class="crumb">Gestão · somente Prisma</div>
+      <h1>Empresas e acessos</h1>
+      <div class="sub">Crie cada empresa-cliente e, dentro dela, adicione os membros (dono, vendedores) com o papel de cada um. É aqui que você libera e revoga acessos.</div>
+    </div>
+    <div id="empresasWrap"></div>
+  </section>
+
+  <!-- ============ VIEW: MÉTRICAS (admin) ============ -->
+  <section class="view" id="v-metricas">
+    <div class="view-head">
+      <div class="crumb">Gestão · somente Prisma</div>
+      <h1>Métricas de uso</h1>
+      <div class="sub">Desempenho de cada cliente: o que assistiu, quanto tempo ficou e quem entrou mas não engajou. Só gestores veem esta tela.</div>
+    </div>
+    <div id="metricsWrap"></div>
+  </section>
+
+</div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg">Salvo</span></div>
+
+<script>
+/* =====================================================================
+   CENTRAL PRISMA — preview multiusuário (Fase 1: visual, sem backend)
+   ---------------------------------------------------------------------
+   IMPORTANTE (segurança): este login é SÓ demonstração. A senha aqui é
+   validada no navegador — NÃO é seguro pra produção. Na Fase 2 trocamos
+   a camada Auth/DB abaixo por Supabase (senha validada no servidor,
+   hash, sessão com token, RLS). Os pontos de troca estão marcados
+   com  // >>> SUPABASE .
+   ===================================================================== */
+
+/* ---------- storage helpers ---------- */
+const LS = {
+  get(k, def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} },
+};
+
+/* ---------- YouTube helpers ---------- */
+function ytId(url){
+  if(!url) return '';
+  url = String(url).trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(url)) return url; // já é um id
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|v=)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : '';
+}
+function ytThumb(id){ return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : ''; }
+function ytEmbed(id){ return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`; }
+
+/* ---------- player customizado (esconde marca do YouTube) ---------- */
+let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false;
+function loadYTApi(cb){
+  if(window.YT && window.YT.Player){ cb(); return; }
+  _ytQueue.push(cb);
+  if(document.getElementById('yt-api')) return;
+  const s=document.createElement('script'); s.id='yt-api'; s.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady=function(){ const q=_ytQueue.slice(); _ytQueue=[]; q.forEach(f=>f()); };
+function fmtTime(s){ s=Math.max(0,Math.floor(s||0)); const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+function setPlayIcon(playing){
+  const ic=document.getElementById('ytPlayIcon'); if(!ic) return;
+  ic.innerHTML = playing ? '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+}
+function updateYTTime(){
+  if(!_cpPlayer||!_cpPlayer.getDuration) return;
+  if(_cpPlayer.getPlayerState && _cpPlayer.getPlayerState()===1 && Auth.user){ Metrics.addWatch(Auth.user.id, 300); }
+  const d=_cpPlayer.getDuration()||0, c=_cpPlayer.getCurrentTime()||0;
+  const fill=document.getElementById('ytFill'); if(fill) fill.style.width=(d?(c/d*100):0)+'%';
+  const t=document.getElementById('ytTime'); if(t) t.textContent=fmtTime(c)+' / '+fmtTime(d);
+}
+function startYTTimer(){ if(_cpTimer) clearInterval(_cpTimer); _cpTimer=setInterval(updateYTTime,300); }
+function mountYouTube(vid){
+  if(_cpPlayer){ try{_cpPlayer.destroy();}catch(e){} _cpPlayer=null; }
+  if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; }
+  _cpReady=false; _pendingPlay=false;
+  loadYTApi(()=>{
+    if(!document.getElementById('ytFrame')) return;
+    _cpPlayer=new YT.Player('ytFrame',{
+      videoId:vid,
+      host:'https://www.youtube-nocookie.com',
+      playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0},
+      events:{
+        onReady:()=>{ _cpReady=true; updateYTTime(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
+        onError:()=>{ const p=document.getElementById('cpPlayer'); if(p){ p.classList.remove('playing'); const cv=document.getElementById('ytCover'); if(cv) cv.innerHTML='<div style="position:relative;z-index:1;text-align:center;color:#fff;padding:20px"><div style="font-weight:800;font-size:14px;margin-bottom:6px">Não consegui carregar o vídeo aqui</div><div style="font-size:12px;opacity:.8">Isso costuma acontecer ao abrir o arquivo direto (file://). Na versão publicada funciona normal.</div></div>'; } },
+        onStateChange:(e)=>{
+          const p=document.getElementById('cpPlayer'); if(!p) return;
+          if(e.data===YT.PlayerState.PLAYING){ p.classList.add('playing'); p.classList.remove('paused','ended'); setPlayIcon(true); startYTTimer(); }
+          else if(e.data===YT.PlayerState.PAUSED){ p.classList.add('paused'); p.classList.remove('playing'); setPlayIcon(false); }
+          else if(e.data===YT.PlayerState.ENDED){ p.classList.add('ended'); p.classList.remove('playing'); setPlayIcon(false); }
+        }
+      }
+    });
+    bindYTControls();
+  });
+}
+function togglePlay(){ if(!_cpPlayer||!_cpPlayer.getPlayerState) return; (_cpPlayer.getPlayerState()===1)?_cpPlayer.pauseVideo():_cpPlayer.playVideo(); }
+function bindYTControls(){
+  const cover=document.getElementById('ytCover'); if(cover) cover.onclick=()=>{ if(_cpReady && _cpPlayer){ try{_cpPlayer.playVideo();}catch(e){} } else { _pendingPlay=true; } };
+  const shield=document.getElementById('ytShield'); if(shield) shield.onclick=togglePlay;
+  const pb=document.getElementById('ytPlay'); if(pb) pb.onclick=togglePlay;
+  const track=document.getElementById('ytTrack'); if(track) track.onclick=(e)=>{ if(!_cpPlayer||!_cpPlayer.getDuration) return; const r=track.getBoundingClientRect(); _cpPlayer.seekTo(((e.clientX-r.left)/r.width)*_cpPlayer.getDuration(), true); updateYTTime(); };
+  const fs=document.getElementById('ytFs'); if(fs) fs.onclick=()=>{ const el=document.getElementById('cpPlayer'); if(!el) return; document.fullscreenElement?document.exitFullscreen():el.requestFullscreen&&el.requestFullscreen(); };
+  const rp=document.getElementById('ytReplay'); if(rp) rp.onclick=()=>{ if(_cpPlayer){ _cpPlayer.seekTo(0); _cpPlayer.playVideo(); } };
+}
+function stopYT(){ if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
+
+/* =====================================================================
+   USUÁRIOS (seed de demonstração)  // >>> SUPABASE: virá de auth.users + tabela clientes
+   ===================================================================== */
+const USERS = [
+  { id:'admin',    name:'Eduardo · Prisma', email:'prismadigita@gmail.com', pass:'Prisma@Central2026', role:'admin'  },
+  { id:'ferraco',  name:'Ferraço',   email:'ferraco@cliente.com',  pass:'cliente123', role:'client' },
+  { id:'metalsul', name:'Metal Sul', email:'metalsul@cliente.com', pass:'cliente123', role:'client' },
+  { id:'acoforte', name:'Aço Forte', email:'acoforte@cliente.com', pass:'cliente123', role:'client' },
+];
+
+/* métricas de uso por usuário  // >>> SUPABASE: tabela "eventos"/"metricas" + RLS (só admin lê tudo) */
+const Metrics = {
+  all(){ return LS.get('cp_metrics', {}); },
+  save(m){ LS.set('cp_metrics', m); },
+  row(uid){ const m=this.all(); return m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; },
+  access(uid){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.access=(r.access||0)+1; r.lastAccessTs=Date.now(); m[uid]=r; this.save(m); },
+  addTime(uid,ms){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.timeMs=(r.timeMs||0)+ms; m[uid]=r; this.save(m); },
+  addWatch(uid,ms){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.watchMs=(r.watchMs||0)+ms; m[uid]=r; this.save(m); },
+};
+function seedDemo(){
+  if(!LS.get('cp_metrics', null)){
+    LS.set('cp_metrics', {
+      metalsul:{access:14, lastAccessTs:Date.now()-2*864e5, timeMs:3.4*36e5, watchMs:2.2*36e5},
+      acoforte:{access:3,  lastAccessTs:Date.now()-11*864e5, timeMs:0.5*36e5, watchMs:25000},
+    });
+  }
+  if(!LS.get('cp_prog_metalsul', null)) LS.set('cp_prog_metalsul', ['aulao-intro','como-usar','saudacao','sondagem']);
+  if(!LS.get('cp_prog_acoforte', null)) LS.set('cp_prog_acoforte', ['aulao-intro']);
+}
+let _sessionTimer=null;
+function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<1) return '—'; if(min<60) return min+' min'; const h=Math.floor(min/60), mm=min%60; return h+'h'+(mm?(' '+mm+'m'):''); }
+function fmtAgo(ts){ if(!ts) return 'nunca'; const d=Math.floor((Date.now()-ts)/864e5); if(d<=0) return 'hoje'; if(d===1) return 'ontem'; return 'há '+d+' dias'; }
+function renderMetrics(){
+  const wrap=document.getElementById('metricsWrap'); if(!wrap) return;
+  const m=Metrics.all();
+  const clients=USERS.filter(u=>u.role==='client');
+  const totalAulas=DB.aulas().filter(a=>a.st==='disponivel').length||1;
+  let sumWatch=0, ativos=0, sumDone=0;
+  const rows=clients.map(u=>{
+    const r=m[u.id]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0};
+    const done=new Set(LS.get('cp_prog_'+u.id, [])).size;
+    sumWatch+=r.watchMs||0; sumDone+=done;
+    if(r.lastAccessTs && (Date.now()-r.lastAccessTs)<7*864e5) ativos++;
+    let eng='off', engT='Nunca acessou';
+    if(r.access>0){ if((r.watchMs||0)<60000){ eng='mid'; engT='Entrou, não assistiu'; } else { eng='on'; engT='Engajado'; } }
+    return {u,r,done,eng,engT};
+  });
+  const tiles=`<div class="metric-tiles">
+    <div class="m-tile"><div class="k">Clientes</div><div class="v">${clients.length}</div></div>
+    <div class="m-tile"><div class="k">Ativos · 7 dias</div><div class="v">${ativos}</div></div>
+    <div class="m-tile"><div class="k">Aulas concluídas</div><div class="v">${sumDone}</div></div>
+    <div class="m-tile"><div class="k">Tempo assistido</div><div class="v">${fmtDur(sumWatch)}</div></div>
+  </div>`;
+  const table=`<div class="m-wrap"><table class="mtable"><thead><tr>
+      <th>Cliente</th><th>Aulas concluídas</th><th>Tempo na plataforma</th><th>Tempo assistido</th><th>Acessos</th><th>Último acesso</th><th>Engajamento</th>
+    </tr></thead><tbody>${rows.map(x=>`<tr>
+      <td><div class="u"><div class="av">${x.u.name.charAt(0)}</div><b>${x.u.name}</b></div></td>
+      <td class="num">${x.done} / ${totalAulas}</td>
+      <td class="num">${fmtDur(x.r.timeMs)}</td>
+      <td class="num">${fmtDur(x.r.watchMs)}</td>
+      <td class="num">${x.r.access||0}</td>
+      <td>${fmtAgo(x.r.lastAccessTs)}</td>
+      <td><span class="eng ${x.eng}"><span class="dot"></span>${x.engT}</span></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  wrap.innerHTML = tiles + table + `<p style="font-size:11.5px;color:var(--g500);margin-top:14px;line-height:1.6">Prévia: os dados de <b>${Auth.user?Auth.user.name:''}</b> são reais (seu uso agora — navegue e assista pra ver mudar); os demais são exemplos. Na versão publicada, cada acesso, tempo e vídeo assistido é registrado de verdade, e <b>só gestores</b> enxergam esta tela.</p>`;
+}
+
+const Auth = {
+  user:null,
+  init(){
+    const uid = LS.get('cp_session', null);
+    if(uid){ this.user = USERS.find(u=>u.id===uid) || null; }
+    return this.user;
+  },
+  // >>> SUPABASE: supabase.auth.signInWithPassword({email,password})
+  login(email, pass){
+    const u = USERS.find(x => x.email.toLowerCase()===String(email).toLowerCase().trim() && x.pass===pass);
+    if(u){ this.user=u; LS.set('cp_session', u.id); return true; }
+    return false;
+  },
+  logout(){ this.user=null; LS.del('cp_session'); },
+  isAdmin(){ return this.user && this.user.role==='admin'; },
+};
+
+/* =====================================================================
+   DADOS DAS AULAS  // >>> SUPABASE: tabela "aulas"
+   ===================================================================== */
+const DEFAULT_AULAS = [
+  {id:"aulao-intro", mod:"Comece por aqui", t:"Aulão — a venda no WhatsApp mudou", d:"O panorama do método: por que o cliente do digital exige condução, não atendimento.", dur:"40 min", st:"disponivel", area:"comercial", tag:"essencial", yt:""},
+  {id:"como-usar", mod:"Comece por aqui", t:"Como usar a Central Prisma", d:"Trilha, aulas, scripts e PGM — o caminho certo dentro da plataforma.", dur:"5 min", st:"disponivel", area:"comercial", tag:"", yt:"ScMzIvxBSi4"},
+  {id:"diag-revela", mod:"Diagnóstico 360", t:"O que o diagnóstico revela sobre sua operação", d:"Produto âncora, comprador ideal e o gargalo que define a estratégia.", dur:"12 min", st:"producao", area:"trafego", tag:"", yt:""},
+  {id:"oferta-lead", mod:"Oferta, produto e campanha", t:"Oferta que gera lead qualificado", d:"Promessa, benefício comercial e o filtro que barra curioso.", dur:"14 min", st:"producao", area:"trafego", tag:"semana", yt:""},
+  {id:"anatomia-anuncio", mod:"Anúncios, criativos e roteiros", t:"Anatomia do anúncio que vende ferro e aço", d:"Gancho, prova e CTA na linguagem real do setor.", dur:"16 min", st:"producao", area:"trafego", tag:"", yt:""},
+  {id:"roteiro-video", mod:"Anúncios, criativos e roteiros", t:"Roteiro de vídeo: o dono na câmera", d:"O que gravar, como falar e por que institucional bonito não converte.", dur:"11 min", st:"producao", area:"trafego", tag:"", yt:""},
+  {id:"saudacao", mod:"WhatsApp e atendimento comercial", t:"Saudação que o cliente responde", d:"Os primeiros 30 segundos decidem. A carta na manga que puxa resposta.", dur:"6 min", st:"disponivel", area:"comercial", tag:"essencial", yt:""},
+  {id:"sondagem", mod:"WhatsApp e atendimento comercial", t:"Sondagem — os 4 Pilares", d:"O QUÊ · POR QUÊ · ONDE · QUANDO antes de qualquer preço.", dur:"9 min", st:"disponivel", area:"comercial", tag:"semana", yt:"", resumo:"O QUÊ · POR QUÊ · ONDE · QUANDO. Não é checklist, é régua mental: encaixe o que conseguir, na ordem que der — mas nunca mande preço sem ter pelo menos dois pilares. Sem contexto o vendedor responde preço; com contexto ele conduz a venda.", tarefa:"Pegue as 5 últimas conversas do seu WhatsApp e marque quantos pilares apareceram antes do preço em cada uma. Menos de 2? Reescreva a abordagem usando os scripts ao lado.", chk:["O QUÊ — produto, medida e quantidade","POR QUÊ — uso abre cross-sell","ONDE — cidade + bairro (frete real)","QUANDO — urgência define o gancho","Mensagem de preço termina com pergunta"], mats:[{nome:"Card dos 4 Pilares — PDF (exemplo)", url:"https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"}]},
+  {id:"preco-contexto", mod:"WhatsApp e atendimento comercial", t:"Preço com contexto — nunca seco", d:"Preço solto é panfletagem. Contexto + total + pergunta de decisão.", dur:"8 min", st:"producao", area:"comercial", tag:"essencial", yt:""},
+  {id:"regua-followup", mod:"Scripts e follow-up", t:"A régua D+1 · D+3 · D+5 · D+7", d:"Quatro toques, quatro ganchos. O encerramento honesto que reativa cliente calado.", dur:"8 min", st:"producao", area:"comercial", tag:"essencial", yt:""},
+  {id:"objecoes", mod:"Scripts e follow-up", t:"Objeções — tá caro e vou pensar", d:"Defender valor antes de mexer no preço. Compromisso antes de conceder.", dur:"10 min", st:"producao", area:"comercial", tag:"", yt:""},
+  {id:"fechamento", mod:"Scripts e follow-up", t:"Pedir o fechamento — 6 técnicas", d:"Quem não pede, não vende. Pergunta presumida e cale a boca.", dur:"9 min", st:"producao", area:"comercial", tag:"semana", yt:""},
+  {id:"kpis", mod:"PGM e indicadores", t:"Os 12 KPIs do comercial", d:"Do investimento ao ROAS: onde o dinheiro vaza e como ler o funil.", dur:"13 min", st:"producao", area:"indicadores", tag:"", yt:""},
+  {id:"marcos-90", mod:"Acompanhamento de 90 dias", t:"O que acontece em cada marco", d:"S1, S2–4, D+30, D+60 e D+90 — o papel da Prisma e o seu em cada fase.", dur:"7 min", st:"producao", area:"indicadores", tag:"", yt:""},
+  {id:"ticket-medio", mod:"Ticket médio e crescimento", t:"Produto âncora e cross-sell", d:"Telha leva parafuso, coluna leva estribo. A terceira alavanca do crescimento.", dur:"12 min", st:"bloqueado", area:"comercial", tag:"", yt:""},
+];
+
+const DB = {
+  // >>> SUPABASE: select/insert/update/delete na tabela "aulas"
+  aulas(){
+    let a = LS.get('cp_aulas', null);
+    if(!a){ a = JSON.parse(JSON.stringify(DEFAULT_AULAS)); LS.set('cp_aulas', a); }
+    return a;
+  },
+  saveAll(arr){ LS.set('cp_aulas', arr); },
+  upsert(obj){
+    const a = this.aulas();
+    const i = a.findIndex(x=>x.id===obj.id);
+    if(i>=0) a[i]=obj; else a.push(obj);
+    this.saveAll(a);
+  },
+  remove(id){ this.saveAll(this.aulas().filter(x=>x.id!==id)); },
+  reset(){ LS.del('cp_aulas'); return this.aulas(); },
+};
+
+/* progresso por usuário  // >>> SUPABASE: tabela "progresso" (user_id, aula_id) + RLS */
+const Prog = {
+  key(){ return 'cp_prog_' + (Auth.user? Auth.user.id : 'anon'); },
+  done(){ return new Set(LS.get(this.key(), [])); },
+  isDone(id){ return this.done().has(id); },
+  toggle(id){ const s=this.done(); s.has(id)?s.delete(id):s.add(id); LS.set(this.key(), [...s]); },
+  set(id,v){ const s=this.done(); v?s.add(id):s.delete(id); LS.set(this.key(), [...s]); },
+};
+
+/* =====================================================================
+   SCRIPTS
+   ===================================================================== */
+const SCRIPTS = [
+  {t:"Saudação com carta na manga", tags:[["green","Essencial"],["gray","Saudação"]], x:`Bom dia, tudo bem? Eu sou o Felipe aqui da Ferraço. Só me confirma uma coisa, <b>de qual cidade está falando?</b> Assim eu consigo te ajudar melhor.`},
+  {t:"Sondagem em 1 mensagem", tags:[["green","Essencial"],["gray","Sondagem"]], x:`Pra te passar o valor certinho, me confirma: <b>quantas barras</b> e <b>pra qual cidade</b> seria? Já vejo frete e prazo pra você.`},
+  {t:"Preço com gancho de frete", tags:[["gray","Orçamento"]], x:`Show! Pra [cidade] e fechando hoje, consigo <b>frete grátis</b> e entrego na quinta. <b>Incluo seu pedido na carga já?</b>`},
+  {t:"Objeção — tá caro", tags:[["red","Objeção"]], x:`Sério? <b>Os mesmos materiais e quantidades?</b> Me confirma certinho, porque as quantidades devem estar diferentes.`},
+  {t:"Follow-up D+3 — motivo novo", tags:[["gray","Follow-up"]], x:`[Nome], consigo segurar essa proposta <b>até sexta</b>. Depois disso o aço pode variar — teve reajuste essa semana. Consegue me confirmar até lá?`},
+  {t:"Follow-up D+7 — encerramento honesto", tags:[["green","Reativa"],["gray","Follow-up"]], x:`[Nome], como não tive retorno vou considerar que <b>não é mais prioridade agora</b>. Deixo a proposta aberta caso o projeto ande, combinado?`},
+  {t:"Recuperação de lead parado", tags:[["gray","Retomada"]], x:`[Nome], separei aqui <b>as [X] peças</b> que você cotou. Tenho caminhão indo pra sua região sexta — <b>encaixo seu pedido nessa carga?</b>`},
+  {t:"Fechamento com alternativas", tags:[["cyan","Fechamento"]], x:`Fechado então! Já monto o pedido. <b>Pagamento seria Pix, cartão ou faturado?</b>`},
+];
+
+/* =====================================================================
+   TRILHAS TEMÁTICAS (home) — coleções de aulas por tema
+   ===================================================================== */
+function trilhaBg(tint){ return `radial-gradient(120% 85% at 72% 8%, ${tint}, transparent 58%), linear-gradient(158deg, #17121c, #0a0910)`; }
+const TRILHAS = [
+  {id:'inicio', sup:'Comece por', nome:'Aqui', desc:'O panorama do método e como usar a plataforma.', grad:trilhaBg('rgba(255,77,109,.45)'), ic:'<path d="M5 3v18"/><path d="M5 4h11l-2 3 2 3H5"/>', aulas:['aulao-intro','como-usar']},
+  {id:'sondagem', sup:'Trilha de', nome:'Sondagem', desc:'Saudação que engaja e os 4 pilares antes do preço.', grad:trilhaBg('rgba(255,77,109,.5)'), ic:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', aulas:['saudacao','sondagem','preco-contexto']},
+  {id:'followup', sup:'Trilha de', nome:'Follow-up', desc:'A régua D+1 a D+7 e como reativar o lead que sumiu.', grad:trilhaBg('rgba(232,155,60,.45)'), ic:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>', aulas:['regua-followup','fechamento','objecoes']},
+  {id:'fechamento', sup:'Trilha de', nome:'Fechamento', desc:'Contornar objeções e pedir a venda sem medo.', grad:trilhaBg('rgba(111,230,158,.42)'), ic:'<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/>', aulas:['objecoes','fechamento','preco-contexto']},
+  {id:'trafego', sup:'Anúncios &', nome:'Tráfego', desc:'Oferta, criativos e roteiros que trazem lead qualificado.', grad:trilhaBg('rgba(255,77,109,.48)'), ic:'<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M14 8a4 4 0 0 1 0 8"/>', aulas:['oferta-lead','anatomia-anuncio','roteiro-video','diag-revela']},
+  {id:'indicadores', sup:'Leitura de', nome:'Indicadores', desc:'Ler a PGM, os 12 KPIs e achar o gargalo da semana.', grad:trilhaBg('rgba(111,230,158,.4)'), ic:'<path d="M3 20h18"/><rect x="5" y="11" width="3.2" height="7"/><rect x="10.4" y="7" width="3.2" height="11"/><rect x="15.8" y="4" width="3.2" height="14"/>', aulas:['kpis','marcos-90']},
+];
+let trilhaSet=null;
+function renderTrilhas(){
+  const wrap=document.getElementById('trilhasWrap'); if(!wrap) return;
+  const all=DB.aulas(); const done=Prog.done();
+  wrap.innerHTML = TRILHAS.map(t=>{
+    const list=t.aulas.map(id=>all.find(a=>a.id===id)).filter(Boolean);
+    const total=list.length||1; const dc=list.filter(a=>done.has(a.id)).length;
+    const pct=Math.round(dc/total*100);
+    return `<div class="trilha-card" data-trilha="${t.id}">
+      <div class="tc-bg" style="background:${t.grad}"></div>
+      <div class="tc-scrim"></div>
+      <div class="tc-count">${list.length} aula${list.length!==1?'s':''}</div>
+      <div class="tc-ic"><svg viewBox="0 0 24 24">${t.ic}</svg></div>
+      <div class="tc-body">
+        <div class="tc-sup">${t.sup}</div>
+        <h3>${t.nome}</h3>
+        <div class="tc-meta"><div class="tc-bar"><div class="tc-fill" style="width:${pct}%"></div></div><span class="tc-pct">${pct}%</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-trilha]').forEach(el=> el.onclick=()=>openTrilha(el.dataset.trilha));
+}
+function setAulasHead(t){
+  const c=document.getElementById('aulasCrumb'), h=document.getElementById('aulasTitle'), s=document.getElementById('aulasSub');
+  if(t){ if(c)c.textContent='Trilha · '+t.nome; if(h)h.textContent=(t.sup+' '+t.nome).trim(); if(s)s.textContent=t.desc||''; }
+  else { if(c)c.textContent='Biblioteca'; if(h)h.textContent='Aulas'; if(s)s.textContent='Conteúdo direto, sem enrolação. Cada aula termina em aplicação — assista e execute na mesma semana.'; }
+}
+function openTrilha(id){
+  const t=TRILHAS.find(x=>x.id===id); if(!t) return;
+  trilhaSet=new Set(t.aulas);
+  currentFilter='all';
+  document.querySelectorAll('#aulaFilters .fbtn').forEach(x=>x.classList.remove('on'));
+  const allBtn=document.querySelector('#aulaFilters .fbtn[data-f="all"]'); if(allBtn) allBtn.classList.add('on');
+  setAulasHead(t);
+  setActiveTrilhaChip(id);
+  renderAulas('all','');
+  show('aulas');
+}
+function renderTrilhaChips(){
+  const box=document.getElementById('trilhaFilters'); if(!box) return;
+  box.innerHTML = `<button class="fbtn tchip on" data-trilha="">Todas as trilhas</button>` +
+    TRILHAS.map(t=>{ const label = t.id==='inicio' ? 'Comece por aqui' : t.nome; return `<button class="fbtn tchip" data-trilha="${t.id}">${label}</button>`; }).join('');
+}
+function setActiveTrilhaChip(id){
+  document.querySelectorAll('#trilhaFilters .tchip').forEach(c=>c.classList.toggle('on', c.dataset.trilha===(id||'')));
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+const stMap = { disponivel:['cyan','Disponível'], producao:['amber','Em produção'], bloqueado:['gray','Bloqueado'] };
+const tagMap = { essencial:['green','Material essencial'], semana:['cyan','Aplicar nesta semana'] };
+
+function thumbHTML(a, cls){
+  const id = ytId(a.yt);
+  if(id){ return `<div class="ac-thumb has-img ${cls||''}"><img src="${ytThumb(id)}" alt="" loading="lazy"><div class="scrim"></div><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span></div>`; }
+  return `<div class="ac-thumb ${cls||''}"><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span></div>`;
+}
+
+function renderAulas(filter='all', q=''){
+  const wrap = document.getElementById('aulasWrap');
+  const AULAS = DB.aulas();
+  const done = Prog.done();
+  const mods = [...new Set(AULAS.map(a=>a.mod))];
+  let html = '';
+  mods.forEach(m=>{
+    const list = AULAS.filter(a=>{
+      if(a.mod!==m) return false;
+      if(trilhaSet && !trilhaSet.has(a.id)) return false;
+      if(filter==='disponivel'&&a.st!=='disponivel') return false;
+      if(filter==='producao'&&a.st!=='producao') return false;
+      if(['comercial','trafego','indicadores'].includes(filter)&&a.area!==filter) return false;
+      if(q && !((a.t+' '+a.d+' '+a.mod).toLowerCase().includes(q))) return false;
+      return true;
+    });
+    if(!list.length) return;
+    html += `<div class="mod-section"><div class="mod-title"><h3>${m}</h3><span class="cnt">${list.length} aula${list.length>1?'s':''}</span></div><div class="aulas-grid">`;
+    list.forEach(a=>{
+      const [tc,tl] = stMap[a.st] || stMap.producao;
+      const locked = a.st==='bloqueado';
+      const extraTag = tagMap[a.tag];
+      html += `<div class="aula-card ${a.st==='producao'?'prod':''} ${locked?'locked':''} ${done.has(a.id)?'completed':''}" ${locked?'':`data-aula="${a.id}"`}>
+        ${thumbHTML(a)}
+        <div class="ac-body">
+          <div class="am">${a.mod}</div>
+          <h4>${a.t}</h4>
+          <p>${a.d||''}</p>
+          <div class="ac-foot">
+            <span class="tag ${tc}"><span class="dot"></span>${tl}</span>
+            ${extraTag?`<span class="tag ${extraTag[0]}"><span class="dot"></span>${extraTag[1]}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  wrap.innerHTML = html || `<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h4>Nada encontrado</h4><p>Ajuste a busca ou os filtros — o conteúdo desta etapa pode ainda estar em produção pela Prisma.</p></div>`;
+  wrap.querySelectorAll('[data-aula]').forEach(el=> el.onclick=()=>openAula(el.dataset.aula));
+}
+
+/* ---------- página da aula (player dinâmico) ---------- */
+function openAula(id){
+  const a = DB.aulas().find(x=>x.id===id);
+  if(!a) return;
+  const vid = ytId(a.yt);
+  const isDone = Prog.isDone(id);
+  const chk = a.chk && a.chk.length ? a.chk : ["Assisti a aula inteira","Anotei o ponto principal","Defini o que vou aplicar esta semana"];
+  const resumo = a.resumo || a.d || '';
+  const tarefa = a.tarefa || 'Aplique o conteúdo desta aula em pelo menos uma conversa real do seu WhatsApp ainda esta semana.';
+  const mats = (a.mats||[]).filter(m=>m && (m.nome||m.url));
+  const matsHTML = mats.length
+    ? mats.map(m=>`<a class="mat-item" href="${m.url||'#'}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>${m.nome||'Material'}<span class="dl">Baixar</span></a>`).join('')
+    : `<div class="mat-item"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>Materiais em breve<span class="badge-soon">Em produção</span></div>`;
+
+  const playerHTML = vid
+    ? `<div class="player" id="cpPlayer">
+        <div id="ytFrame"></div>
+        <div class="yt-mask"></div>
+        <div class="yt-shield" id="ytShield"></div>
+        <div class="yt-cover" id="ytCover" style="background-image:url('${ytThumb(vid)}')"><div class="cp"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
+        <div class="yt-controls">
+          <button class="yt-btn" id="ytPlay" title="Play/Pause"><svg id="ytPlayIcon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></button>
+          <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div></div>
+          <span class="yt-time" id="ytTime">0:00 / 0:00</span>
+          <button class="yt-btn" id="ytFs" title="Tela cheia"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+        <div class="yt-end" id="ytEnd"><div style="font-weight:800; font-size:15px; color:var(--g100)">Aula concluída</div><button class="btn cyan" id="ytReplay"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rever aula</button></div>
+      </div>`
+    : `<div class="player placeholder"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><div class="center"><div class="bigplay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><div class="pv-t">${a.t}</div><div class="pv-s">Vídeo em produção pela Prisma</div></div></div>`;
+
+  document.getElementById('v-aula').innerHTML = `
+    <div class="view-head" style="margin-bottom:18px"><div class="crumb">Aulas · ${a.mod}</div></div>
+    <div class="aula-layout">
+      <div>
+        ${playerHTML}
+        <div class="aula-info">
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            ${(tagMap[a.tag]?`<span class="tag ${tagMap[a.tag][0]}"><span class="dot"></span>${tagMap[a.tag][1]}</span>`:'')}
+            <span class="tag ${(stMap[a.st]||stMap.producao)[0]}"><span class="dot"></span>${(stMap[a.st]||stMap.producao)[1]}</span>
+            <span class="tag gray">${a.dur||''}</span>
+          </div>
+          <h1>${a.t}</h1>
+          <p class="resumo">${resumo}</p>
+        </div>
+        <div class="task-box"><div class="tk">⚡ Tarefa da aula</div><div class="tv">${tarefa}</div></div>
+        <div class="aula-nav">
+          <button class="btn ghost" data-goto="aulas"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Voltar às aulas</button>
+          <button class="btn ${isDone?'ghost':'green'}" id="btnConcluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>${isDone?'Concluída ✓':'Marcar como concluída'}</button>
+        </div>
+      </div>
+      <aside>
+        <div class="side-card"><div class="sc-k">Checklist da aula</div><ul class="chk">${chk.map(c=>`<li><span class="box"></span><span>${c}</span></li>`).join('')}</ul></div>
+        <div class="side-card"><div class="sc-k">Scripts relacionados</div>
+          <div class="mat-item" data-goto="scripts"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-4-7.5"/><path d="M8 10h8M8 14h5"/></svg>Ver biblioteca de scripts</div>
+        </div>
+        <div class="side-card"><div class="sc-k">Materiais para download</div>
+          ${matsHTML}
+        </div>
+      </aside>
+    </div>`;
+
+  const btn = document.getElementById('btnConcluir');
+  btn.onclick = ()=>{
+    Prog.toggle(id);
+    const nowDone = Prog.isDone(id);
+    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>${nowDone?'Concluída ✓':'Marcar como concluída'}`;
+    btn.className = 'btn '+(nowDone?'ghost':'green');
+    toast(nowDone?'Aula concluída — mandou bem!':'Marcação removida');
+    refreshProgress();
+  };
+  bindGoto();
+  show('aula');
+  if(vid) mountYouTube(vid);
+}
+
+/* ---------- scripts ---------- */
+function renderScripts(q=''){
+  const wrap = document.getElementById('scriptsWrap');
+  const list = SCRIPTS.filter(s=>!q || (s.t+' '+s.x).toLowerCase().includes(q));
+  wrap.innerHTML = list.map(s=>`
+    <div class="script-card">
+      <div class="sh"><h4>${s.t}</h4>${s.tags.map(([c,l])=>`<span class="tag ${c}"><span class="dot"></span>${l}</span>`).join('')}</div>
+      <div class="script-txt">${s.x}</div>
+      <button class="copy-btn" data-txt="${s.x.replace(/<[^>]+>/g,'').replace(/"/g,'&quot;')}">Copiar script</button>
+    </div>`).join('') ||
+    `<div class="empty" style="grid-column:1/-1"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h4>Nenhum script encontrado</h4><p>Tente outro termo.</p></div>`;
+  wrap.querySelectorAll('.copy-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      navigator.clipboard?.writeText(b.dataset.txt);
+      b.textContent='✓ Copiado'; b.classList.add('copied');
+      setTimeout(()=>{b.textContent='Copiar script'; b.classList.remove('copied')},1800);
+    });
+  });
+}
+
+/* ---------- dashboard ---------- */
+function refreshProgress(){
+  const AULAS = DB.aulas();
+  const disponiveis = AULAS.filter(a=>a.st==='disponivel');
+  const total = disponiveis.length || 1;
+  const done = Prog.done();
+  const doneCount = disponiveis.filter(a=>done.has(a.id)).length;
+  const pct = Math.round((doneCount/total)*100);
+
+  const C = 339.3;
+  const ring = document.getElementById('ringVal');
+  if(ring) ring.style.strokeDashoffset = C*(1-pct/100);
+  const rp = document.getElementById('ringPct'); if(rp) rp.textContent = pct+'%';
+  const tf = document.getElementById('topFill'); if(tf) tf.style.width = pct+'%';
+  const tp = document.getElementById('topPct'); if(tp) tp.textContent = pct+'%';
+  const sd = document.getElementById('statDone'); if(sd) sd.textContent = doneCount+' de '+total;
+  const rt = document.getElementById('ringT');
+  const rs = document.getElementById('ringS');
+  if(rt&&rs){
+    if(pct===0){ rt.textContent='Comece pela primeira aula'; rs.textContent='Sua jornada de implantação'; }
+    else if(pct>=100){ rt.textContent='Módulo dominado 🎉'; rs.textContent='Continue aplicando na operação'; }
+    else { rt.textContent=doneCount+' de '+total+' aulas'; rs.textContent='Mantenha o ritmo — 1 por dia já muda o jogo'; }
+  }
+
+  // continue de onde parou = primeira disponível não concluída (senão a primeira)
+  const next = disponiveis.find(a=>!done.has(a.id)) || disponiveis[0];
+  const ct = document.getElementById('continueCard');
+  if(next && ct){
+    ct.dataset.aula = next.id;
+    document.getElementById('continueT').textContent = next.t;
+    document.getElementById('continueS').textContent = next.mod+' · '+(next.dur||'');
+    document.getElementById('continueK').textContent = done.has(next.id)?'Reveja quando quiser':'Continue de onde parou';
+    const id = ytId(next.yt);
+    const th = document.getElementById('continueThumb');
+    th.innerHTML = (id?`<img src="${ytThumb(id)}" alt="">`:'') + `<div class="pl2"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>`;
+  }
+
+  // trilhas temáticas no dash
+  renderTrilhas();
+}
+
+function greeting(){
+  const h = new Date().getHours();
+  return h<12 ? 'Bom dia' : (h<18 ? 'Boa tarde' : 'Boa noite');
+}
+
+/* =====================================================================
+   ADMIN — gerir aulas
+   ===================================================================== */
+function slugify(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || ('aula-'+Date.now()); }
+
+function renderAdmin(){
+  const AULAS = DB.aulas();
+  document.getElementById('adminCount').textContent = AULAS.length+' aula'+(AULAS.length!==1?'s':'');
+  // datalist de módulos
+  const mods = [...new Set(AULAS.map(a=>a.mod))];
+  document.getElementById('modList').innerHTML = mods.map(m=>`<option value="${m}">`).join('');
+  // lista
+  document.getElementById('adminList').innerHTML = AULAS.map(a=>{
+    const id = ytId(a.yt);
+    return `<div class="al-item">
+      <div class="al-thumb">${id?`<img src="${ytThumb(id)}" alt="">`:`<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`}</div>
+      <div class="al-meta"><b>${a.t}</b><span>${a.mod} · ${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
+      <div class="al-act">
+        <button class="icon-btn" data-edit="${a.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+        <button class="icon-btn del" data-del="${a.id}" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty"><h4>Nenhuma aula cadastrada</h4><p>Use o formulário ao lado pra adicionar a primeira.</p></div>`;
+
+  document.querySelectorAll('#adminList [data-edit]').forEach(b=> b.onclick=()=>editAula(b.dataset.edit));
+  document.querySelectorAll('#adminList [data-del]').forEach(b=> b.onclick=()=>{
+    if(confirm('Remover esta aula?')){ DB.remove(b.dataset.del); renderAdmin(); renderAulas(currentFilter); refreshProgress(); toast('Aula removida'); }
+  });
+}
+
+function editAula(id){
+  const a = DB.aulas().find(x=>x.id===id); if(!a) return;
+  document.getElementById('afId').value = a.id;
+  document.getElementById('afT').value = a.t||'';
+  document.getElementById('afYt').value = a.yt||'';
+  document.getElementById('afMod').value = a.mod||'';
+  document.getElementById('afDur').value = a.dur||'';
+  document.getElementById('afArea').value = a.area||'comercial';
+  document.getElementById('afSt').value = a.st||'disponivel';
+  document.getElementById('afTag').value = a.tag||'';
+  document.getElementById('afD').value = a.d||'';
+  document.getElementById('afResumo').value = a.resumo||'';
+  setMats(a.mats||[]);
+  document.getElementById('afTitle').textContent = '✎ Editando aula';
+  ytPrev();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function clearAdminForm(){
+  ['afId','afT','afYt','afMod','afDur','afD','afResumo'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('afArea').value='comercial';
+  document.getElementById('afSt').value='disponivel';
+  document.getElementById('afTag').value='';
+  setMats([]);
+  document.getElementById('afTitle').textContent = '＋ Nova aula';
+  ytPrev();
+}
+
+function ytPrev(){
+  const id = ytId(document.getElementById('afYt').value);
+  const prev = document.getElementById('afYtPrev');
+  const hint = document.getElementById('afYtHint');
+  if(id){ document.getElementById('afYtImg').src = ytThumb(id); prev.classList.add('on'); hint.textContent='✓ Vídeo reconhecido — vai tocar dentro da plataforma.'; hint.className='hint ok'; }
+  else { prev.classList.remove('on'); hint.textContent='Aceita youtube.com/watch, youtu.be ou link "não listado".'; hint.className='hint'; }
+}
+
+/* materiais (repetidor no admin) */
+function matRowHTML(nome, url){
+  const esc = s => String(s||'').replace(/"/g,'&quot;');
+  return `<div class="mat-row"><div class="mr-fields"><input class="mr-nome" placeholder="Nome (ex.: Manual 9 Passos — PDF)" value="${esc(nome)}"><input class="mr-url" placeholder="Link do arquivo (https://…)" value="${esc(url)}"></div><button type="button" class="icon-btn del mr-del" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`;
+}
+function renderMatEmpty(){
+  const box=document.getElementById('afMats');
+  if(!box.querySelector('.mat-row')) box.innerHTML='<div class="mat-empty">Nenhum material ainda. Clique em "Adicionar material".</div>';
+}
+function addMatRow(nome='', url=''){
+  const box=document.getElementById('afMats');
+  const empty=box.querySelector('.mat-empty'); if(empty) empty.remove();
+  box.insertAdjacentHTML('beforeend', matRowHTML(nome,url));
+}
+function setMats(arr){
+  const box=document.getElementById('afMats'); box.innerHTML='';
+  (arr||[]).forEach(m=>addMatRow(m.nome, m.url));
+  renderMatEmpty();
+}
+function collectMats(){
+  return [...document.querySelectorAll('#afMats .mat-row')].map(r=>({
+    nome:r.querySelector('.mr-nome').value.trim(),
+    url:r.querySelector('.mr-url').value.trim(),
+  })).filter(m=>m.nome||m.url);
+}
+
+/* =====================================================================
+   NAV / APP
+   ===================================================================== */
+/* =====================================================================
+   EMPRESAS E ACESSOS (admin) + seletor de empresa
+   ===================================================================== */
+const EMP = {
+  all(){ return LS.get('cp_empresas', []); },
+  save(a){ LS.set('cp_empresas', a); },
+};
+function seedEmpresas(){
+  if(!LS.get('cp_empresas', null)){
+    LS.set('cp_empresas', [
+      {id:'ferraco', nome:'Ferraço', membros:[{id:'m1', nome:'Eduardo (dono)', email:'ferraco@cliente.com', role:'gestor'}]},
+      {id:'metalsul', nome:'Metal Sul', membros:[{id:'m2', nome:'Carlos Souza', email:'metalsul@cliente.com', role:'gestor'},{id:'m3', nome:'Vendedor 1', email:'vend1@metalsul.com', role:'vendedor'}]},
+      {id:'acoforte', nome:'Aço Forte', membros:[{id:'m4', nome:'Aço Forte', email:'acoforte@cliente.com', role:'gestor'}]},
+    ]);
+  }
+}
+const ROLES={gestor:'Gestor', vendedor:'Vendedor', viewer:'Somente leitura'};
+let activeEmpresa=null, empresaSel=null;
+function empresasForUser(){
+  const all=EMP.all();
+  if(Auth.isAdmin()) return all;
+  const em=((Auth.user&&Auth.user.email)||'').toLowerCase();
+  return all.filter(e=>e.membros.some(m=>(m.email||'').toLowerCase()===em));
+}
+function renderEmpSwitch(){
+  const box=document.getElementById('empSwitch'); if(!box) return;
+  const list=empresasForUser();
+  if(!list.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  if(!activeEmpresa || !list.find(e=>e.id===activeEmpresa)) activeEmpresa=list[0].id;
+  const active=list.find(e=>e.id===activeEmpresa);
+  document.getElementById('empName').textContent = active?active.nome:'—';
+  document.getElementById('empMenu').innerHTML = list.map(e=>`<button type="button" class="es-item ${e.id===activeEmpresa?'on':''}" data-emp="${e.id}"><span class="mk">${e.nome.charAt(0)}</span>${e.nome}<svg class="es-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('');
+  document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); });
+}
+function renderEmpresas(){
+  const wrap=document.getElementById('empresasWrap'); if(!wrap) return;
+  const list=EMP.all();
+  if(empresaSel){
+    const e=list.find(x=>x.id===empresaSel);
+    if(!e){ empresaSel=null; return renderEmpresas(); }
+    wrap.innerHTML = `
+      <button class="btn ghost" id="empBack" style="margin-bottom:16px"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Todas as empresas</button>
+      <div class="admin-grid">
+        <form class="admin-form" id="memberForm" autocomplete="off">
+          <div class="af-k">＋ Adicionar membro · ${e.nome}</div>
+          <div class="ff-row"><label>Nome</label><input id="mfNome" placeholder="Nome da pessoa"></div>
+          <div class="ff-row"><label>E-mail (vira o login)</label><input id="mfEmail" placeholder="pessoa@empresa.com"></div>
+          <div class="ff-row"><label>Papel</label><select id="mfRole"><option value="vendedor">Vendedor</option><option value="gestor">Gestor</option><option value="viewer">Somente leitura</option></select></div>
+          <button type="submit" class="btn green" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>
+          <div class="hint" style="margin-top:10px">No preview isso salva a lista. Na versão publicada, cria o login seguro (Supabase) e libera o acesso da pessoa.</div>
+        </form>
+        <div>
+          <div class="admin-bar"><span class="ab-count">${e.membros.length} membro(s)</span></div>
+          <div class="admin-list">${e.membros.map(m=>`
+            <div class="al-item">
+              <div class="al-thumb"><span style="font-weight:800;color:var(--cyan);font-size:14px">${m.nome.charAt(0)}</span></div>
+              <div class="al-meta"><b>${m.nome}</b><span>${m.email} · ${ROLES[m.role]||m.role}</span></div>
+              <div class="al-act"><button class="icon-btn del" data-rm="${m.id}" title="Remover acesso"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
+            </div>`).join('') || '<div class="empty"><h4>Sem membros ainda</h4><p>Adicione o primeiro acesso ao lado.</p></div>'}</div>
+        </div>
+      </div>`;
+    document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
+    document.getElementById('memberForm').onsubmit=(ev)=>{
+      ev.preventDefault();
+      const nome=document.getElementById('mfNome').value.trim(), email=document.getElementById('mfEmail').value.trim();
+      if(!nome||!email){ toast('Preencha nome e e-mail'); return; }
+      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
+      emp.membros.push({id:'m'+Date.now(), nome, email, role:document.getElementById('mfRole').value});
+      EMP.save(arr); renderEmpresas(); renderEmpSwitch(); toast('Membro adicionado');
+    };
+    wrap.querySelectorAll('[data-rm]').forEach(b=> b.onclick=()=>{
+      if(!confirm('Remover o acesso desta pessoa?')) return;
+      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
+      emp.membros=emp.membros.filter(m=>m.id!==b.dataset.rm);
+      EMP.save(arr); renderEmpresas(); toast('Acesso removido');
+    });
+    return;
+  }
+  wrap.innerHTML = `
+    <form id="empForm" style="display:flex; gap:9px; margin-bottom:18px; flex-wrap:wrap">
+      <input id="empNome" placeholder="Nome da nova empresa (ex.: Torres Metais)" style="flex:1; min-width:220px; padding:12px 14px; background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--g100); font-family:inherit; font-size:13.5px">
+      <button type="submit" class="btn green"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar empresa</button>
+    </form>
+    <div class="admin-list">${list.map(e=>`
+      <div class="al-item" data-emp="${e.id}" style="cursor:pointer">
+        <div class="al-thumb"><span style="font-weight:800;color:var(--cyan);font-size:14px">${e.nome.charAt(0)}</span></div>
+        <div class="al-meta"><b>${e.nome}</b><span>${e.membros.length} membro(s)</span></div>
+        <div class="al-act"><button class="icon-btn" title="Gerenciar membros"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>
+      </div>`).join('') || '<div class="empty"><h4>Nenhuma empresa</h4><p>Crie a primeira acima.</p></div>'}</div>`;
+  document.getElementById('empForm').onsubmit=(ev)=>{
+    ev.preventDefault();
+    const nome=document.getElementById('empNome').value.trim(); if(!nome){ toast('Digite o nome da empresa'); return; }
+    const arr=EMP.all(); arr.push({id:'e'+Date.now(), nome, membros:[]}); EMP.save(arr);
+    renderEmpresas(); renderEmpSwitch(); toast('Empresa criada');
+  };
+  wrap.querySelectorAll('[data-emp]').forEach(el=> el.onclick=()=>{ empresaSel=el.dataset.emp; renderEmpresas(); });
+}
+
+const views = document.querySelectorAll('.view');
+const navItems = document.querySelectorAll('.nav-item');
+let navStack=[];
+function currentView(){ const el=document.querySelector('.view.on'); return el ? el.id.replace('v-','') : null; }
+function goBack(){ const prev=navStack.pop(); show(prev||'inicio', true); }
+function show(view, isBack){
+  if(!isBack){ const cur=currentView(); if(cur && cur!==view) navStack.push(cur); }
+  if(view!=='aula') stopYT();
+  views.forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+view)?.classList.add('on');
+  navItems.forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  document.body.classList.remove('menu-open');
+  window.scrollTo({top:0});
+  const bb=document.getElementById('backBtn'); if(bb) bb.style.display = navStack.length ? 'flex' : 'none';
+  if(view==='gerir') renderAdmin();
+  if(view==='metricas') renderMetrics();
+  if(view==='empresas'){ empresaSel=null; renderEmpresas(); }
+}
+navItems.forEach(n=>n.addEventListener('click',()=>{
+  if(n.dataset.view==='aulas'){ trilhaSet=null; setAulasHead(null); setActiveTrilhaChip(''); renderAulas(currentFilter, (document.getElementById('globalSearch').value||'').trim().toLowerCase()); }
+  show(n.dataset.view);
+}));
+function bindGoto(){ document.querySelectorAll('[data-goto]').forEach(el=> el.onclick=()=>show(el.dataset.goto)); }
+
+/* continue card click */
+document.getElementById('continueCard').addEventListener('click',function(){ if(this.dataset.aula) openAula(this.dataset.aula); });
+
+/* search */
+const gs = document.getElementById('globalSearch');
+gs.addEventListener('input',()=>{
+  const q = gs.value.trim().toLowerCase();
+  const active = document.querySelector('.view.on')?.id;
+  if(active==='v-scripts'){ renderScripts(q); }
+  else { if(q){ trilhaSet=null; setAulasHead(null); setActiveTrilhaChip(''); } if(q && active!=='v-aulas') show('aulas'); renderAulas(currentFilter,q); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='/' && document.activeElement!==gs && Auth.user){ e.preventDefault(); gs.focus(); } });
+
+/* filters */
+let currentFilter='all';
+document.getElementById('aulaFilters').addEventListener('click',e=>{
+  const b = e.target.closest('.fbtn'); if(!b) return;
+  document.querySelectorAll('#aulaFilters .fbtn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); currentFilter=b.dataset.f;
+  renderAulas(currentFilter, gs.value.trim().toLowerCase());
+});
+document.getElementById('trilhaFilters').addEventListener('click',e=>{
+  const b=e.target.closest('.tchip'); if(!b) return;
+  const id=b.dataset.trilha;
+  if(id){ openTrilha(id); }
+  else { trilhaSet=null; setAulasHead(null); setActiveTrilhaChip(''); renderAulas(currentFilter, gs.value.trim().toLowerCase()); }
+});
+
+/* checklists (views estáticas) */
+document.addEventListener('click',e=>{ const li=e.target.closest('#v-checklists .chk li, #v-aula .chk li'); if(li) li.classList.toggle('ok'); });
+
+/* mobile menu */
+document.getElementById('menuBtn').addEventListener('click',()=>document.body.classList.toggle('menu-open'));
+document.getElementById('backBtn').addEventListener('click', goBack);
+document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
+document.addEventListener('click', e=>{ const sw=document.getElementById('empSwitch'); if(sw && !sw.contains(e.target)) sw.classList.remove('open'); });
+
+/* admin form */
+document.getElementById('afYt').addEventListener('input', ytPrev);
+document.getElementById('afClear').addEventListener('click', clearAdminForm);
+document.getElementById('afAddMat').addEventListener('click', ()=>addMatRow());
+document.getElementById('afMats').addEventListener('click', e=>{ const b=e.target.closest('.mr-del'); if(b){ b.closest('.mat-row').remove(); renderMatEmpty(); } });
+document.getElementById('adminReset').addEventListener('click', ()=>{
+  if(confirm('Restaurar a lista de aulas padrão? Isso apaga as alterações do preview.')){ DB.reset(); renderAdmin(); renderAulas(currentFilter); refreshProgress(); toast('Lista restaurada'); }
+});
+document.getElementById('adminForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const t = document.getElementById('afT').value.trim();
+  if(!t){ toast('Dê um título à aula'); return; }
+  let id = document.getElementById('afId').value || slugify(t);
+  const obj = {
+    id,
+    t,
+    yt: document.getElementById('afYt').value.trim(),
+    mod: document.getElementById('afMod').value.trim() || 'Comece por aqui',
+    dur: document.getElementById('afDur').value.trim(),
+    area: document.getElementById('afArea').value,
+    st: document.getElementById('afSt').value,
+    tag: document.getElementById('afTag').value,
+    d: document.getElementById('afD').value.trim(),
+    resumo: document.getElementById('afResumo').value.trim(),
+    mats: collectMats(),
+  };
+  DB.upsert(obj);
+  clearAdminForm();
+  renderAdmin(); renderAulas(currentFilter); refreshProgress();
+  toast('Aula salva ✓');
+});
+
+/* toast */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.add('on'); clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('on'), 2200);
+}
+
+/* =====================================================================
+   LOGIN / SESSÃO
+   ===================================================================== */
+function enterApp(){
+  const u = Auth.user;
+  navStack=[]; seedDemo(); seedEmpresas(); Metrics.access(u.id);
+  activeEmpresa = LS.get('cp_active_emp', null);
+  if(_sessionTimer) clearInterval(_sessionTimer);
+  _sessionTimer=setInterval(()=>{ if(Auth.user) Metrics.addTime(Auth.user.id, 15000); }, 15000);
+  document.getElementById('authScreen').classList.remove('on');
+  document.getElementById('app').classList.add('on');
+  // usuário na UI
+  const initial = (u.name||'?').charAt(0).toUpperCase();
+  document.getElementById('sideAv').textContent = initial;
+  document.getElementById('topAv').textContent = initial;
+  document.getElementById('sideName').textContent = u.name;
+  const roleEl = document.getElementById('sideRole');
+  roleEl.textContent = Auth.isAdmin()?'Admin · Prisma':'Cliente';
+  roleEl.className = 'u-role'+(Auth.isAdmin()?' adm':'');
+  document.getElementById('welcomeGreet').innerHTML = `${greeting()}, <span class="gl">${u.name}</span>. Bora avançar?`;
+  // admin nav
+  document.querySelectorAll('.admin-only').forEach(el=> el.style.display = Auth.isAdmin()?'':'none');
+  // render
+  renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
+  show('inicio');
+}
+
+function showLogin(){
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('authScreen').classList.add('on');
+}
+
+document.getElementById('authForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const email = document.getElementById('authEmail').value;
+  const pass = document.getElementById('authPass').value;
+  if(Auth.login(email, pass)){ document.getElementById('authErr').classList.remove('on'); enterApp(); }
+  else { document.getElementById('authErr').classList.add('on'); }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  if(_sessionTimer){ clearInterval(_sessionTimer); _sessionTimer=null; }
+  Auth.logout();
+  document.getElementById('authEmail').value='';
+  document.getElementById('authPass').value='';
+  showLogin();
+});
+
+/* init */
+setMats([]);
+if(Auth.init()){ enterApp(); } else { showLogin(); }
+</script>
+
+</body>
+</html>
