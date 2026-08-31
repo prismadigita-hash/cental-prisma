@@ -400,7 +400,7 @@
   .home-sec-head h2{font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--g100)}
   .home-sec-head p{font-size:12.5px; color:var(--g500)}
   .trilhas-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
-  .trilha-card{position:relative; aspect-ratio:2/3; border-radius:16px; overflow:hidden; cursor:pointer; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 8px 30px rgba(0,0,0,.42); transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s}
+  .trilha-card{position:relative; aspect-ratio:.6; border-radius:16px; overflow:hidden; cursor:pointer; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 8px 30px rgba(0,0,0,.42); transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s}
   .trilha-card:hover{transform:translateY(-5px); border-color:rgba(255,77,109,.5); box-shadow:0 20px 46px rgba(0,0,0,.6)}
   .trilha-card .tc-bg{position:absolute; inset:0; z-index:0; transition:transform .55s cubic-bezier(.22,1,.36,1)}
   .trilha-card:hover .tc-bg{transform:scale(1.07)}
@@ -816,14 +816,6 @@
   </button>
 
   <div class="nav-label">Operação</div>
-  <button class="nav-item" data-view="pgm">
-    <svg viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3.4" height="7" rx="0.8"/><rect x="10.3" y="7" width="3.4" height="11" rx="0.8"/><rect x="15.6" y="3.5" width="3.4" height="14.5" rx="0.8"/></svg>
-    PGM · Indicadores
-  </button>
-  <button class="nav-item" data-view="dias90">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-    90 dias
-  </button>
   <button class="nav-item" data-view="materiais">
     <svg viewBox="0 0 24 24"><path d="M4 4h6l2 3h8v13H4V4z"/></svg>
     Materiais
@@ -1876,19 +1868,27 @@ async function loadCovers(){
 }
 function pickTrilhaCover(id){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-  inp.onchange=async ()=>{
+  inp.onchange=()=>{
     const file=inp.files&&inp.files[0]; if(!file) return;
-    if(file.size>5*1024*1024){ toast('Imagem muito grande (máx 5MB)'); return; }
-    toast('Enviando capa…');
-    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-    const path=`trilhas/${id}-${Date.now()}.${ext}`;
-    const { error:upErr }=await sb.storage.from('capas').upload(path, file, { upsert:true, contentType:file.type });
-    if(upErr){ toast('Erro no upload: '+upErr.message); return; }
-    const { data:pub }=sb.storage.from('capas').getPublicUrl(path);
-    const url=pub&&pub.publicUrl;
-    const { error }=await sb.from('trilhas').update({ cover_url:url }).eq('id', id);
-    if(error){ toast('Erro ao salvar: '+error.message); return; }
-    COVERS_CACHE[id]=url; renderTrilhas(); toast('Capa atualizada ✓');
+    toast('Processando capa…');
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=async ()=>{
+        const maxW=760; const scale=Math.min(1, maxW/(img.width||maxW));
+        const w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        let dataUrl; try{ dataUrl=cv.toDataURL('image/jpeg', 0.82); }catch(e){ toast('Não consegui processar a imagem'); return; }
+        const { error }=await sb.from('trilhas').update({ cover_url:dataUrl }).eq('id', id);
+        if(error){ toast('Erro ao salvar: '+error.message); return; }
+        COVERS_CACHE[id]=dataUrl; renderTrilhas(); toast('Capa atualizada ✓');
+      };
+      img.onerror=()=>toast('Arquivo de imagem inválido');
+      img.src=reader.result;
+    };
+    reader.onerror=()=>toast('Não consegui ler o arquivo');
+    reader.readAsDataURL(file);
   };
   inp.click();
 }
