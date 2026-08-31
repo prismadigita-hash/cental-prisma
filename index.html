@@ -1228,7 +1228,7 @@ function ytThumb(id){ return id ? `https://img.youtube.com/vi/${id}/hqdefault.jp
 function ytEmbed(id){ return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`; }
 
 /* ---------- player customizado (esconde marca do YouTube) ---------- */
-let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false, _cpAula=null;
+let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false, _cpAula=null, _lastPosSave=0, _resumeAt=0, _resumedDone=false;
 const _cpRates=[0.5, 0.75, 1, 1.25, 1.5, 2];
 const _QLABEL={highres:'4K+', hd2160:'2160p', hd1440:'1440p', hd1080:'1080p', hd720:'720p', large:'480p', medium:'360p', small:'240p', tiny:'144p', auto:'Automática', default:'Automática'};
 function escHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -1247,7 +1247,9 @@ function setPlayIcon(playing){
 }
 function updateYTTime(){
   if(!_cpPlayer||!_cpPlayer.getDuration) return;
-  if(_cpPlayer.getPlayerState && _cpPlayer.getPlayerState()===1 && Auth.user){ Metrics.bufferWatch(300); }
+  const _playing = _cpPlayer.getPlayerState && _cpPlayer.getPlayerState()===1;
+  if(_playing && Auth.user){ Metrics.bufferWatch(300); }
+  if(_playing){ const now=Date.now(); if(now-_lastPosSave>5000){ _lastPosSave=now; savePos(); } }
   const d=_cpPlayer.getDuration()||0, c=_cpPlayer.getCurrentTime()||0;
   const fill=document.getElementById('ytFill'); if(fill) fill.style.width=(d?(c/d*100):0)+'%';
   const t=document.getElementById('ytTime'); if(t) t.textContent=fmtTime(c)+' / '+fmtTime(d);
@@ -1257,20 +1259,24 @@ function mountYouTube(vid){
   if(_cpPlayer){ try{_cpPlayer.destroy();}catch(e){} _cpPlayer=null; }
   if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; }
   _cpReady=false; _pendingPlay=false;
+  let startAt=0;
+  try{ const p=LS.get(posKey(), null); if(p && p.t>10 && (!p.d || p.t < p.d-15)) startAt=Math.floor(p.t); }catch(e){}
+  _resumeAt=startAt; _resumedDone=false;
+  if(startAt>10) setTimeout(()=>toast('▶ Retomando de '+fmtTime(startAt)), 500);
   loadYTApi(()=>{
     if(!document.getElementById('ytFrame')) return;
     _cpPlayer=new YT.Player('ytFrame',{
       videoId:vid,
       host:'https://www.youtube-nocookie.com',
-      playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0},
+      playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0, start:startAt},
       events:{
-        onReady:()=>{ _cpReady=true; updateYTTime(); renderMarks(); try{ const v=document.getElementById('ytVol'); if(v) v.value=_cpPlayer.getVolume(); }catch(e){} updateVolIcon(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
+        onReady:()=>{ _cpReady=true; if(_resumeAt>3){ try{ _cpPlayer.seekTo(_resumeAt, true); }catch(e){} } updateYTTime(); renderMarks(); try{ const v=document.getElementById('ytVol'); if(v) v.value=_cpPlayer.getVolume(); }catch(e){} updateVolIcon(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
         onError:()=>{ const p=document.getElementById('cpPlayer'); if(p){ p.classList.remove('playing'); const cv=document.getElementById('ytCover'); if(cv) cv.innerHTML='<div style="position:relative;z-index:1;text-align:center;color:#fff;padding:20px"><div style="font-weight:800;font-size:14px;margin-bottom:6px">Não consegui carregar o vídeo aqui</div><div style="font-size:12px;opacity:.8">Isso costuma acontecer ao abrir o arquivo direto (file://). Na versão publicada funciona normal.</div></div>'; } },
         onStateChange:(e)=>{
           const p=document.getElementById('cpPlayer'); if(!p) return;
-          if(e.data===YT.PlayerState.PLAYING){ p.classList.add('playing'); p.classList.remove('paused','ended'); setPlayIcon(true); startYTTimer(); }
-          else if(e.data===YT.PlayerState.PAUSED){ p.classList.add('paused'); p.classList.remove('playing'); setPlayIcon(false); }
-          else if(e.data===YT.PlayerState.ENDED){ p.classList.add('ended'); p.classList.remove('playing'); setPlayIcon(false); }
+          if(e.data===YT.PlayerState.PLAYING){ p.classList.add('playing'); p.classList.remove('paused','ended'); setPlayIcon(true); startYTTimer(); if(_resumeAt>3 && !_resumedDone){ _resumedDone=true; try{ if(Math.abs((_cpPlayer.getCurrentTime()||0)-_resumeAt)>5) _cpPlayer.seekTo(_resumeAt, true); }catch(e){} } }
+          else if(e.data===YT.PlayerState.PAUSED){ p.classList.add('paused'); p.classList.remove('playing'); setPlayIcon(false); savePos(); }
+          else if(e.data===YT.PlayerState.ENDED){ p.classList.add('ended'); p.classList.remove('playing'); setPlayIcon(false); try{ LS.set(posKey(), {t:0,d:0}); }catch(e){} }
         }
       }
     });
@@ -1349,7 +1355,13 @@ function renderMarks(){
     if(d) marks.forEach(m=>{ const tk=document.createElement('div'); tk.className='yt-mark-tick'; tk.style.left=(m.t/d*100)+'%'; tk.title=fmtTime(m.t)+(m.label?(' · '+m.label):''); tk.onclick=(e)=>{ e.stopPropagation(); seekMark(m.t); }; track.appendChild(tk); });
   }
 }
-function stopYT(){ try{ Metrics.flushWatch(); }catch(e){} if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
+/* retomar de onde parou (posição do vídeo por usuário + aula) */
+function posKey(){ return 'cp_pos_'+(Auth.user?Auth.user.id:'anon')+'_'+(_cpAula||'x'); }
+function savePos(){
+  if(!_cpPlayer||!_cpPlayer.getCurrentTime) return;
+  try{ const t=_cpPlayer.getCurrentTime()||0, d=(_cpPlayer.getDuration&&_cpPlayer.getDuration())||0; if(t>3) LS.set(posKey(), {t,d}); }catch(e){}
+}
+function stopYT(){ try{ savePos(); Metrics.flushWatch(); }catch(e){} if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
 
 /* =====================================================================
    USUÁRIOS (seed de demonstração)  // >>> SUPABASE: virá de auth.users + tabela clientes
