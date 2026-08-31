@@ -2001,12 +2001,17 @@ function renderEmpresas(){
       toast('Criando acesso…');
       const res=await createMember(empresaSel, nome, email, document.getElementById('mfRole').value, senha);
       if(res.error){ toast('Erro: '+res.error); return; }
+      LS.set('cp_pw_'+email.toLowerCase(), senha);   // guarda p/ recopiar o convite depois
       navigator.clipboard?.writeText(inviteMsg({nome,email,senha}, e.nome));
       await loadEmpresas(); renderEmpresas(); renderEmpSwitch(); toast('Acesso criado — convite copiado! 📋 Cole no WhatsApp');
     };
     wrap.querySelectorAll('[data-invite]').forEach(b=> b.onclick=()=>{
       const m=e.membros.find(x=>x.id===b.dataset.invite);
-      if(m){ const msg=`Olá, ${m.nome}! 👋\n\nSeu acesso à Central Prisma — ${e.nome}:\n\n🔗 Link: ${location.origin}\n📧 Login: ${m.email}\n🔑 Senha: (a que defini quando criei seu acesso)\n\nÉ só entrar e começar pela trilha "Comece por aqui".`; navigator.clipboard?.writeText(msg); toast('Convite copiado! 📋'); }
+      if(m){
+        const senha = LS.get('cp_pw_'+(m.email||'').toLowerCase(), null) || genPassFromEmail(m.email);
+        navigator.clipboard?.writeText(inviteMsg({nome:m.nome, email:m.email, senha}, e.nome));
+        toast('Convite copiado — com a senha! 📋');
+      }
     });
     wrap.querySelectorAll('[data-role]').forEach(s=> s.onchange=async ()=>{
       const { error }=await sb.from('empresa_membros').update({ papel:s.value }).eq('id', s.dataset.role);
