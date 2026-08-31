@@ -6,6 +6,11 @@
 <title>Central Prisma — Implantação do Método</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://anpfvjbjefsmkqratoeg.supabase.co">
+<link rel="preconnect" href="https://www.youtube-nocookie.com">
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://img.youtube.com">
+<link rel="preconnect" href="https://i.ytimg.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1525,7 +1530,7 @@ async function loadAulas(){
   try{
     const { data:aus } = await sb.from('aulas').select('*').order('created_at');
     AULAS_CACHE = (aus||[]).map(a=>({ id:a.id, mod:a.modulo, t:a.titulo, d:a.descricao, resumo:a.resumo, dur:a.dur, st:a.status, area:a.area, tag:a.tag, yt:a.yt }));
-    const { data:ta } = await sb.from('trilha_aulas').select('trilha_id,aula_id,ordem').order('ordem');
+    const { data:ta } = await sb.from('trilha_aulas').select('trilha_id,aula_id,ordem').order('ordem').order('aula_id');
     const map={}; AULA_TRILHA={};
     (ta||[]).forEach(r=>{ (map[r.trilha_id]=map[r.trilha_id]||[]).push(r.aula_id); if(!AULA_TRILHA[r.aula_id]) AULA_TRILHA[r.aula_id]=r.trilha_id; });
     TRILHAS.forEach(t=>{ t.aulas = map[t.id] || []; });
@@ -1686,7 +1691,7 @@ const TRILHAS = [
   {id:'trafego', sup:'Anúncios &', nome:'Tráfego', desc:'Oferta, criativos e roteiros que trazem lead qualificado.', grad:trilhaBg('rgba(255,77,109,.48)'), ic:'<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M14 8a4 4 0 0 1 0 8"/>', aulas:['oferta-lead','anatomia-anuncio','roteiro-video','diag-revela']},
   {id:'indicadores', sup:'Leitura de', nome:'Indicadores', desc:'Ler a PGM, os 12 KPIs e achar o gargalo da semana.', grad:trilhaBg('rgba(111,230,158,.4)'), ic:'<path d="M3 20h18"/><rect x="5" y="11" width="3.2" height="7"/><rect x="10.4" y="7" width="3.2" height="11"/><rect x="15.8" y="4" width="3.2" height="14"/>', aulas:['kpis','marcos-90']},
 ];
-let trilhaSet=null;
+let trilhaSet=null, trilhaCur=null;
 function renderTrilhas(){
   const wrap=document.getElementById('trilhasWrap'); if(!wrap) return;
   const all=DB.aulas(); const done=Prog.done();
@@ -1715,6 +1720,7 @@ function renderTrilhas(){
   wrap.querySelectorAll('[data-cover]').forEach(b=> b.onclick=(ev)=>{ ev.stopPropagation(); pickTrilhaCover(b.dataset.cover); });
 }
 function setAulasHead(t){
+  trilhaCur = t || null;
   const c=document.getElementById('aulasCrumb'), h=document.getElementById('aulasTitle'), s=document.getElementById('aulasSub');
   if(t){ if(c)c.textContent='Trilha · '+t.nome; if(h)h.textContent=(t.sup+' '+t.nome).trim(); if(s)s.textContent=t.desc||''; }
   else { if(c)c.textContent='Biblioteca'; if(h)h.textContent='Aulas'; if(s)s.textContent='Conteúdo direto, sem enrolação. Cada aula termina em aplicação — assista e execute na mesma semana.'; }
@@ -1755,28 +1761,22 @@ function renderAulas(filter='all', q=''){
   const wrap = document.getElementById('aulasWrap');
   const AULAS = DB.aulas();
   const done = Prog.done();
-  const mods = [...new Set(AULAS.map(a=>a.mod))];
-  let html = '';
-  mods.forEach(m=>{
-    const list = AULAS.filter(a=>{
-      if(a.mod!==m) return false;
-      if(trilhaSet && !trilhaSet.has(a.id)) return false;
-      if(filter==='disponivel'&&a.st!=='disponivel') return false;
-      if(filter==='producao'&&a.st!=='producao') return false;
-      if(['comercial','trafego','indicadores'].includes(filter)&&a.area!==filter) return false;
-      if(q && !((a.t+' '+a.d+' '+a.mod).toLowerCase().includes(q))) return false;
-      return true;
-    });
-    if(!list.length) return;
-    html += `<div class="mod-section"><div class="mod-title"><h3>${m}</h3><span class="cnt">${list.length} aula${list.length>1?'s':''}</span></div><div class="aulas-grid">`;
-    list.forEach(a=>{
-      const [tc,tl] = stMap[a.st] || stMap.producao;
-      const locked = a.st==='bloqueado';
-      const extraTag = tagMap[a.tag];
-      html += `<div class="aula-card ${a.st==='producao'?'prod':''} ${locked?'locked':''} ${done.has(a.id)?'completed':''}" ${locked?'':`data-aula="${a.id}"`}>
+  const passa = a=>{
+    if(trilhaSet && !trilhaSet.has(a.id)) return false;
+    if(filter==='disponivel'&&a.st!=='disponivel') return false;
+    if(filter==='producao'&&a.st!=='producao') return false;
+    if(['comercial','trafego','indicadores'].includes(filter)&&a.area!==filter) return false;
+    if(q && !((a.t+' '+a.d+' '+a.mod).toLowerCase().includes(q))) return false;
+    return true;
+  };
+  const cardHTML = (a, num)=>{
+    const [tc,tl] = stMap[a.st] || stMap.producao;
+    const locked = a.st==='bloqueado';
+    const extraTag = tagMap[a.tag];
+    return `<div class="aula-card ${a.st==='producao'?'prod':''} ${locked?'locked':''} ${done.has(a.id)?'completed':''}" ${locked?'':`data-aula="${a.id}"`}>
         ${thumbHTML(a)}
         <div class="ac-body">
-          <div class="am">${a.mod}</div>
+          <div class="am">${num?('Aula '+num):(a.mod||'')}</div>
           <h4>${a.t}</h4>
           <p>${a.d||''}</p>
           <div class="ac-foot">
@@ -1785,9 +1785,26 @@ function renderAulas(filter='all', q=''){
           </div>
         </div>
       </div>`;
+  };
+  let html = '';
+  if(trilhaCur){
+    // trilha aberta: respeita a ORDEM definida no Gerir aulas (trilha_aulas.ordem)
+    const list = (trilhaCur.aulas||[]).map(id=>AULAS.find(a=>a.id===id)).filter(Boolean).filter(passa);
+    if(list.length){
+      html += `<div class="mod-section"><div class="mod-title"><h3>${(trilhaCur.sup+' '+trilhaCur.nome).trim()}</h3><span class="cnt">${list.length} aula${list.length>1?'s':''} · na ordem</span></div><div class="aulas-grid">`;
+      list.forEach((a,i)=>{ html += cardHTML(a, i+1); });
+      html += `</div></div>`;
+    }
+  } else {
+    const mods = [...new Set(AULAS.map(a=>a.mod))];
+    mods.forEach(m=>{
+      const list = AULAS.filter(a=>a.mod===m).filter(passa);
+      if(!list.length) return;
+      html += `<div class="mod-section"><div class="mod-title"><h3>${m}</h3><span class="cnt">${list.length} aula${list.length>1?'s':''}</span></div><div class="aulas-grid">`;
+      list.forEach(a=>{ html += cardHTML(a); });
+      html += `</div></div>`;
     });
-    html += `</div></div>`;
-  });
+  }
   wrap.innerHTML = html || `<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><h4>Nada encontrado</h4><p>Ajuste a busca ou os filtros — o conteúdo desta etapa pode ainda estar em produção pela Prisma.</p></div>`;
   wrap.querySelectorAll('[data-aula]').forEach(el=> el.onclick=()=>openAula(el.dataset.aula));
 }
@@ -1878,7 +1895,14 @@ function openAula(id){
   };
   bindGoto();
   show('aula');
-  if(vid) mountYouTube(vid);
+  if(vid){
+    mountYouTube(vid);
+    // capa em alta resolução quando o vídeo tiver (maxres); senão mantém a hq
+    const mx='https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg';
+    const im=new Image();
+    im.onload=()=>{ if(im.naturalWidth>200){ const cv=document.getElementById('ytCover'); if(cv) cv.style.backgroundImage=`url('${mx}')`; } };
+    im.src=mx;
+  }
 }
 
 /* ---------- scripts ---------- */
@@ -2269,11 +2293,11 @@ function pickTrilhaCover(id){
     reader.onload=()=>{
       const img=new Image();
       img.onload=async ()=>{
-        const maxW=760; const scale=Math.min(1, maxW/(img.width||maxW));
+        const maxW=1080; const scale=Math.min(1, maxW/(img.width||maxW));
         const w=Math.max(1,Math.round(img.width*scale)), h=Math.max(1,Math.round(img.height*scale));
         const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-        cv.getContext('2d').drawImage(img,0,0,w,h);
-        let dataUrl; try{ dataUrl=cv.toDataURL('image/jpeg', 0.82); }catch(e){ toast('Não consegui processar a imagem'); return; }
+        const cx=cv.getContext('2d'); cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality='high'; cx.drawImage(img,0,0,w,h);
+        let dataUrl; try{ dataUrl=cv.toDataURL('image/jpeg', 0.86); }catch(e){ toast('Não consegui processar a imagem'); return; }
         const { error }=await sb.from('trilhas').update({ cover_url:dataUrl }).eq('id', id);
         if(error){ toast('Erro ao salvar: '+error.message); return; }
         COVERS_CACHE[id]=dataUrl; renderTrilhas(); toast('Capa atualizada ✓');
@@ -2475,6 +2499,7 @@ async function enterApp(){
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   show('inicio');
+  setTimeout(()=>{ try{ loadYTApi(()=>{}); }catch(e){} }, 800);   // aquece o player: 1º vídeo abre na hora
 }
 
 function showLogin(){
