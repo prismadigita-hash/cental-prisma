@@ -554,6 +554,8 @@
   .player .yt-fill{position:absolute; left:0; top:0; bottom:0; background:var(--cyan); border-radius:99px; width:0%}
   .player .yt-time{font-family:var(--mono); font-size:11px; color:#fff; white-space:nowrap}
   .player .yt-btn.txt{font-family:var(--mono); font-size:12px; font-weight:800; min-width:30px}
+  .player .yt-btn.cc{font-size:11px; letter-spacing:.5px; border:1px solid rgba(255,255,255,.4); border-radius:5px; padding:1px 5px; min-width:0; opacity:.6}
+  .player .yt-btn.cc.on{opacity:1; color:var(--cyan); border-color:var(--cyan)}
   .player .yt-vol{display:flex; align-items:center; flex-shrink:0}
   .player .yt-vol-range{width:0; opacity:0; transition:width .2s, opacity .2s; height:4px; cursor:pointer; accent-color:var(--cyan)}
   .player .yt-vol:hover .yt-vol-range, .player .yt-vol-range:focus{width:66px; opacity:1; margin-left:8px}
@@ -690,6 +692,14 @@
   .yt-preview{margin-top:10px; aspect-ratio:16/9; border-radius:9px; overflow:hidden; border:1px solid var(--line); display:none; background:var(--navy)}
   .yt-preview.on{display:block}
   .yt-preview img{width:100%; height:100%; object-fit:cover}
+  .admin-list .adm-th{font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--cyan); margin:16px 0 9px; display:flex; align-items:center; gap:8px}
+  .admin-list .adm-th::after{content:""; flex:1; height:1px; background:var(--line)}
+  .admin-list .adm-th:first-child{margin-top:0}
+  .admin-list .al-ord{display:flex; flex-direction:column; gap:3px; flex-shrink:0}
+  .admin-list .al-ord button{width:24px; height:20px; border-radius:6px; background:transparent; border:1px solid var(--line); color:var(--g300); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0}
+  .admin-list .al-ord button:hover:not(:disabled){border-color:var(--cyan); color:var(--cyan)}
+  .admin-list .al-ord button:disabled{opacity:.3; cursor:default}
+  .admin-list .al-ord button svg{width:12px; height:12px; stroke:currentColor; stroke-width:2.5; fill:none}
   .admin-list .al-item{display:flex; align-items:center; gap:13px; background:var(--navy-deep); border:1px solid var(--line); border-radius:11px; padding:11px 13px; margin-bottom:10px; transition:border-color .15s}
   .admin-list .al-item:hover{border-color:rgba(255,77,109,.3)}
   .admin-list .al-thumb{width:74px; height:44px; border-radius:7px; flex-shrink:0; overflow:hidden; background:var(--navy); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative}
@@ -1268,9 +1278,9 @@ function mountYouTube(vid){
     _cpPlayer=new YT.Player('ytFrame',{
       videoId:vid,
       host:'https://www.youtube-nocookie.com',
-      playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0, start:startAt},
+      playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0, start:startAt, cc_load_policy:0, hl:'pt'},
       events:{
-        onReady:()=>{ _cpReady=true; if(_resumeAt>3){ try{ _cpPlayer.seekTo(_resumeAt, true); }catch(e){} } updateYTTime(); renderMarks(); try{ const v=document.getElementById('ytVol'); if(v) v.value=_cpPlayer.getVolume(); }catch(e){} updateVolIcon(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
+        onReady:()=>{ _cpReady=true; if(_resumeAt>3){ try{ _cpPlayer.seekTo(_resumeAt, true); }catch(e){} } updateYTTime(); renderMarks(); try{ const v=document.getElementById('ytVol'); if(v) v.value=_cpPlayer.getVolume(); }catch(e){} updateVolIcon(); try{ setCC(LS.get('cp_cc',0)==1); }catch(e){} if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
         onError:()=>{ const p=document.getElementById('cpPlayer'); if(p){ p.classList.remove('playing'); const cv=document.getElementById('ytCover'); if(cv) cv.innerHTML='<div style="position:relative;z-index:1;text-align:center;color:#fff;padding:20px"><div style="font-weight:800;font-size:14px;margin-bottom:6px">Não consegui carregar o vídeo aqui</div><div style="font-size:12px;opacity:.8">Isso costuma acontecer ao abrir o arquivo direto (file://). Na versão publicada funciona normal.</div></div>'; } },
         onStateChange:(e)=>{
           const p=document.getElementById('cpPlayer'); if(!p) return;
@@ -1294,9 +1304,15 @@ function bindYTControls(){
   const sp=document.getElementById('ytSpeed'); if(sp) sp.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytQualMenu')?.classList.remove('on'); buildSpeedMenu(); document.getElementById('ytSpeedMenu')?.classList.toggle('on'); };
   const ql=document.getElementById('ytQual'); if(ql) ql.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytSpeedMenu')?.classList.remove('on'); buildQualMenu(); document.getElementById('ytQualMenu')?.classList.toggle('on'); };
   const mk=document.getElementById('ytMark'); if(mk) mk.onclick=(e)=>{ e.stopPropagation(); addMark(); };
+  const cc=document.getElementById('ytCC'); if(cc) cc.onclick=()=>{ setCC(!cc.classList.contains('on')); };
   const mt=document.getElementById('ytMute'); if(mt) mt.onclick=()=>{ if(!_cpPlayer) return; try{ if(_cpPlayer.isMuted()){ _cpPlayer.unMute(); const v=document.getElementById('ytVol'); if(v && +v.value===0){ _cpPlayer.setVolume(60); v.value=60; } } else { _cpPlayer.mute(); } }catch(e){} updateVolIcon(); };
   const vl=document.getElementById('ytVol'); if(vl) vl.oninput=()=>{ if(!_cpPlayer) return; const v=+vl.value; try{ _cpPlayer.setVolume(v); if(v===0) _cpPlayer.mute(); else if(_cpPlayer.isMuted()) _cpPlayer.unMute(); }catch(e){} updateVolIcon(); };
   renderMarks();
+}
+function setCC(on){
+  try{ if(on){ _cpPlayer.loadModule('captions'); _cpPlayer.loadModule('cc'); } else { _cpPlayer.unloadModule('captions'); _cpPlayer.unloadModule('cc'); } }catch(e){}
+  const b=document.getElementById('ytCC'); if(b) b.classList.toggle('on', !!on);
+  try{ LS.set('cp_cc', on?1:0); }catch(e){}
 }
 function updateVolIcon(){
   const b=document.getElementById('ytMute'); if(!b||!_cpPlayer) return;
@@ -1522,13 +1538,25 @@ async function saveAulaDB(obj, trilhaId){
   if(aulaId){ const { error }=await sb.from('aulas').update(row).eq('id', aulaId); if(error) return {error:error.message}; }
   else { const { data, error }=await sb.from('aulas').insert(row).select('id').single(); if(error) return {error:error.message}; aulaId=data.id; }
   if(trilhaId){
+    // preserva a posição se a aula já estava nesta trilha; senão joga pro fim
+    let ordem=0;
+    try{
+      const { data:cur }=await sb.from('trilha_aulas').select('ordem').eq('trilha_id',trilhaId).eq('aula_id',aulaId).maybeSingle();
+      if(cur && typeof cur.ordem==='number'){ ordem=cur.ordem; }
+      else { const { data:mx }=await sb.from('trilha_aulas').select('ordem').eq('trilha_id',trilhaId).order('ordem',{ascending:false}).limit(1); ordem=(mx&&mx[0]? (mx[0].ordem+1):0); }
+    }catch(e){}
     await sb.from('trilha_aulas').delete().eq('aula_id', aulaId);
-    const { error:te }=await sb.from('trilha_aulas').insert({ trilha_id:trilhaId, aula_id:aulaId, ordem:0 });
+    const { error:te }=await sb.from('trilha_aulas').insert({ trilha_id:trilhaId, aula_id:aulaId, ordem });
     if(te) return {error:te.message};
   }
   return {ok:true, id:aulaId};
 }
 async function removeAulaDB(id){ const { error }=await sb.from('aulas').delete().eq('id', id); return error?{error:error.message}:{ok:true}; }
+async function reorderTrilha(trilhaId, orderedAulaIds){
+  for(let i=0;i<orderedAulaIds.length;i++){
+    await sb.from('trilha_aulas').update({ ordem:i }).eq('trilha_id',trilhaId).eq('aula_id',orderedAulaIds[i]);
+  }
+}
 
 /* progresso por usuário  // >>> SUPABASE: tabela "progresso" (user_id, aula_id) + RLS */
 const Prog = {
@@ -1773,6 +1801,7 @@ function openAula(id){
   const vid = ytId(a.yt);
   const isDone = Prog.isDone(id);
   const chk = a.chk && a.chk.length ? a.chk : ["Assisti a aula inteira","Anotei o ponto principal","Defini o que vou aplicar esta semana"];
+  const chkDone = new Set(LS.get('cp_chk_'+(Auth.user?Auth.user.id:'anon')+'_'+id, []));
   const resumo = a.resumo || a.d || '';
   const tarefa = a.tarefa || 'Aplique o conteúdo desta aula em pelo menos uma conversa real do seu WhatsApp ainda esta semana.';
   const mats = (a.mats||[]).filter(m=>m && (m.nome||m.url));
@@ -1795,6 +1824,7 @@ function openAula(id){
           <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div></div>
           <span class="yt-time" id="ytTime">0:00 / 0:00</span>
           <button class="yt-btn" id="ytMark" title="Marcar ponto importante"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          <button class="yt-btn txt cc" id="ytCC" title="Legenda">CC</button>
           <button class="yt-btn txt" id="ytSpeed" title="Velocidade">1x</button>
           <button class="yt-btn" id="ytQual" title="Qualidade"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-1.1 2.7H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></button>
           <button class="yt-btn" id="ytFs" title="Tela cheia"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -1827,7 +1857,7 @@ function openAula(id){
         </div>
       </div>
       <aside>
-        <div class="side-card"><div class="sc-k">Checklist da aula</div><ul class="chk">${chk.map(c=>`<li><span class="box"></span><span>${c}</span></li>`).join('')}</ul></div>
+        <div class="side-card"><div class="sc-k">Checklist da aula</div><ul class="chk">${chk.map((c,i)=>`<li data-ci="${i}" class="${chkDone.has(i)?'ok':''}"><span class="box"></span><span>${c}</span></li>`).join('')}</ul></div>
         <div class="side-card"><div class="sc-k">Scripts relacionados</div>
           <div class="mat-item" data-goto="scripts"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-4-7.5"/><path d="M8 10h8M8 14h5"/></svg>Ver biblioteca de scripts</div>
         </div>
@@ -1929,19 +1959,43 @@ function renderAdmin(){
   document.getElementById('adminCount').textContent = AULAS.length+' aula'+(AULAS.length!==1?'s':'');
   const tsel=document.getElementById('afTrilha');
   if(tsel && !tsel.options.length){ tsel.innerHTML = TRILHAS.map(t=>`<option value="${t.id}">${(t.sup+' '+t.nome).trim()}</option>`).join(''); }
-  document.getElementById('adminList').innerHTML = AULAS.map(a=>{
+  const itemHTML=(a, tid, i, n)=>{
     const id = ytId(a.yt);
-    const tObj = TRILHAS.find(x=>x.id===AULA_TRILHA[a.id]);
-    const tNome = tObj ? (tObj.sup+' '+tObj.nome).trim() : 'sem trilha';
+    const ord = tid ? `<div class="al-ord">
+        <button data-move="up" data-tid="${tid}" data-aid="${a.id}" ${i===0?'disabled':''} title="Subir"><svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg></button>
+        <button data-move="down" data-tid="${tid}" data-aid="${a.id}" ${i===n-1?'disabled':''} title="Descer"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>` : '';
     return `<div class="al-item">
+      ${ord}
       <div class="al-thumb">${id?`<img src="${ytThumb(id)}" alt="">`:`<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`}</div>
-      <div class="al-meta"><b>${a.t}</b><span>${tNome} · ${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
+      <div class="al-meta"><b>${i>=0?(i+1)+'. ':''}${a.t}</b><span>${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
       <div class="al-act">
         <button class="icon-btn" data-edit="${a.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
         <button class="icon-btn del" data-del="${a.id}" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
       </div>
     </div>`;
-  }).join('') || `<div class="empty"><h4>Nenhuma aula cadastrada</h4><p>Use o formulário ao lado pra adicionar a primeira.</p></div>`;
+  };
+  let html='';
+  TRILHAS.forEach(t=>{
+    const ids = t.aulas||[];
+    const list = ids.map(id=>AULAS.find(a=>a.id===id)).filter(Boolean);
+    if(!list.length) return;
+    html += `<div class="adm-th">${(t.sup+' '+t.nome).trim()} · ${list.length}</div>`;
+    list.forEach((a,i)=>{ html += itemHTML(a, t.id, i, list.length); });
+  });
+  const semTrilha = AULAS.filter(a=>!AULA_TRILHA[a.id]);
+  if(semTrilha.length){ html += `<div class="adm-th">Sem trilha · ${semTrilha.length}</div>`; semTrilha.forEach(a=>{ html += itemHTML(a, null, -1, 0); }); }
+  document.getElementById('adminList').innerHTML = html || `<div class="empty"><h4>Nenhuma aula cadastrada</h4><p>Use o formulário ao lado pra adicionar a primeira.</p></div>`;
+  document.querySelectorAll('#adminList [data-move]').forEach(b=> b.onclick=async ()=>{
+    const tid=b.dataset.tid, aid=b.dataset.aid, dir=b.dataset.move;
+    const t=TRILHAS.find(x=>x.id===tid); if(!t) return;
+    const ids=(t.aulas||[]).slice(); const idx=ids.indexOf(aid); if(idx<0) return;
+    const j = dir==='up'? idx-1 : idx+1; if(j<0||j>=ids.length) return;
+    [ids[idx], ids[j]] = [ids[j], ids[idx]];
+    document.querySelectorAll('#adminList [data-move]').forEach(x=>x.disabled=true);
+    await reorderTrilha(tid, ids);
+    await loadAulas(); renderAdmin(); renderTrilhas(); toast('Ordem atualizada ✓');
+  });
   document.querySelectorAll('#adminList [data-edit]').forEach(b=> b.onclick=()=>editAula(b.dataset.edit));
   document.querySelectorAll('#adminList [data-del]').forEach(b=> b.onclick=async ()=>{
     if(!confirm('Remover esta aula?')) return;
@@ -2328,7 +2382,14 @@ document.getElementById('trilhaFilters').addEventListener('click',e=>{
 });
 
 /* checklists (views estáticas) */
-document.addEventListener('click',e=>{ const li=e.target.closest('#v-checklists .chk li, #v-aula .chk li'); if(li) li.classList.toggle('ok'); });
+document.addEventListener('click',e=>{
+  const li=e.target.closest('#v-checklists .chk li, #v-aula .chk li'); if(!li) return;
+  li.classList.toggle('ok');
+  if(li.closest('#v-aula') && _cpAula){
+    const checked=[...document.querySelectorAll('#v-aula .chk li.ok')].map(x=>+x.dataset.ci).filter(n=>!isNaN(n));
+    try{ LS.set('cp_chk_'+(Auth.user?Auth.user.id:'anon')+'_'+_cpAula, checked); }catch(e){}
+  }
+});
 
 /* mobile menu */
 bindPwEye('authPassEye','authPass');
