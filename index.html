@@ -411,8 +411,8 @@
   .trilha-card .tc-count{position:absolute; top:15px; left:16px; z-index:2; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,.9); text-shadow:0 1px 6px rgba(0,0,0,.75); opacity:0; transition:opacity .2s}
   .trilha-card:hover .tc-count{opacity:1}
   .trilha-card .tc-body{position:relative; z-index:2; padding:22px 22px 26px}
-  .trilha-card .tc-sup{font-size:16px; font-weight:700; letter-spacing:.4px; line-height:1.06; color:#fff; text-transform:uppercase; text-shadow:0 2px 12px rgba(0,0,0,.72)}
-  .trilha-card h3{font-size:31px; font-weight:900; letter-spacing:-.5px; line-height:.96; color:var(--cyan); margin-top:3px; text-transform:uppercase; text-shadow:0 3px 18px rgba(0,0,0,.6)}
+  .trilha-card .tc-sup{font-size:clamp(13px, 1.05vw, 16px); font-weight:700; letter-spacing:.4px; line-height:1.06; color:#fff; text-transform:uppercase; text-shadow:0 2px 12px rgba(0,0,0,.72)}
+  .trilha-card h3{font-size:clamp(21px, 2.05vw, 32px); font-weight:900; letter-spacing:-.5px; line-height:.96; color:var(--cyan); margin-top:3px; text-transform:uppercase; text-shadow:0 3px 18px rgba(0,0,0,.6); overflow-wrap:break-word}
   .trilha-card .tc-prog{position:absolute; left:0; bottom:0; z-index:3; height:4px; background:linear-gradient(90deg, var(--green), var(--green-light)); width:0%; border-radius:0 3px 0 0; box-shadow:0 0 12px rgba(111,230,158,.5)}
   .trilha-card .tc-cover-btn{position:absolute; top:14px; right:14px; z-index:4; width:32px; height:32px; border-radius:9px; background:rgba(8,8,12,.62); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.22); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s, border-color .2s}
   .trilha-card:hover .tc-cover-btn{opacity:1}
@@ -553,6 +553,27 @@
   .player .yt-track{flex:1; height:6px; background:rgba(255,255,255,.25); border-radius:99px; cursor:pointer; position:relative}
   .player .yt-fill{position:absolute; left:0; top:0; bottom:0; background:var(--cyan); border-radius:99px; width:0%}
   .player .yt-time{font-family:var(--mono); font-size:11px; color:#fff; white-space:nowrap}
+  .player .yt-btn.txt{font-family:var(--mono); font-size:12px; font-weight:800; min-width:30px}
+  .player .yt-mark-tick{position:absolute; top:-3px; width:3px; height:12px; background:var(--warm); border-radius:2px; transform:translateX(-50%); box-shadow:0 0 6px rgba(240,178,103,.85); cursor:pointer; z-index:2}
+  .player .yt-menu{position:absolute; right:14px; bottom:52px; z-index:8; background:rgba(12,10,15,.97); border:1px solid rgba(255,255,255,.16); border-radius:11px; padding:6px; display:none; min-width:132px; box-shadow:0 14px 38px rgba(0,0,0,.6)}
+  .player .yt-menu.on{display:block}
+  .player .yt-menu .mh{font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--g500); padding:4px 10px 6px}
+  .player .yt-menu .mi{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:7px 10px; border-radius:7px; font-size:12.5px; font-weight:600; color:#fff; cursor:pointer; white-space:nowrap}
+  .player .yt-menu .mi:hover{background:rgba(255,255,255,.10)}
+  .player .yt-menu .mi.on{color:var(--cyan)}
+  .player .yt-menu .mi.on::after{content:"✓"; font-weight:900}
+  .player .yt-menu .note{font-size:10px; color:var(--g500); padding:6px 10px 3px; line-height:1.4; max-width:150px}
+  .yt-marks{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px}
+  .yt-marks .ym-lbl{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; letter-spacing:.6px; text-transform:uppercase; color:var(--g500)}
+  .yt-marks .ym-lbl svg{stroke:var(--warm); fill:none}
+  .yt-marks .ym-chip{display:inline-flex; align-items:center; gap:7px; background:var(--navy-deep); border:1px solid var(--line); border-radius:99px; padding:5px 6px 5px 11px; font-size:12px; font-weight:600; color:var(--g100); cursor:pointer; transition:border-color .15s}
+  .yt-marks .ym-chip:hover{border-color:var(--warm)}
+  .yt-marks .ym-chip .ym-t{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--warm)}
+  .yt-marks .ym-chip .ym-x{width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--g500); font-size:15px; line-height:1}
+  .yt-marks .ym-chip .ym-x:hover{color:var(--red)}
+  .yt-marks .ym-add{display:inline-flex; align-items:center; gap:6px; background:transparent; border:1px dashed var(--line); border-radius:99px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--g300); cursor:pointer; font-family:inherit}
+  .yt-marks .ym-add:hover{border-color:var(--warm); color:var(--warm)}
+  .yt-marks .ym-add svg{width:13px; height:13px; stroke:currentColor; stroke-width:2.2; fill:none}
   .player .yt-end{position:absolute; inset:0; z-index:6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(5,9,21,.94)}
   .player.ended .yt-end{display:flex}
   .aula-info{margin-top:18px}
@@ -1204,7 +1225,10 @@ function ytThumb(id){ return id ? `https://img.youtube.com/vi/${id}/hqdefault.jp
 function ytEmbed(id){ return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`; }
 
 /* ---------- player customizado (esconde marca do YouTube) ---------- */
-let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false;
+let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false, _cpAula=null;
+const _cpRates=[0.5, 0.75, 1, 1.25, 1.5, 2];
+const _QLABEL={highres:'4K+', hd2160:'2160p', hd1440:'1440p', hd1080:'1080p', hd720:'720p', large:'480p', medium:'360p', small:'240p', tiny:'144p', auto:'Automática', default:'Automática'};
+function escHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function loadYTApi(cb){
   if(window.YT && window.YT.Player){ cb(); return; }
   _ytQueue.push(cb);
@@ -1237,7 +1261,7 @@ function mountYouTube(vid){
       host:'https://www.youtube-nocookie.com',
       playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0},
       events:{
-        onReady:()=>{ _cpReady=true; updateYTTime(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
+        onReady:()=>{ _cpReady=true; updateYTTime(); renderMarks(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
         onError:()=>{ const p=document.getElementById('cpPlayer'); if(p){ p.classList.remove('playing'); const cv=document.getElementById('ytCover'); if(cv) cv.innerHTML='<div style="position:relative;z-index:1;text-align:center;color:#fff;padding:20px"><div style="font-weight:800;font-size:14px;margin-bottom:6px">Não consegui carregar o vídeo aqui</div><div style="font-size:12px;opacity:.8">Isso costuma acontecer ao abrir o arquivo direto (file://). Na versão publicada funciona normal.</div></div>'; } },
         onStateChange:(e)=>{
           const p=document.getElementById('cpPlayer'); if(!p) return;
@@ -1258,6 +1282,56 @@ function bindYTControls(){
   const track=document.getElementById('ytTrack'); if(track) track.onclick=(e)=>{ if(!_cpPlayer||!_cpPlayer.getDuration) return; const r=track.getBoundingClientRect(); _cpPlayer.seekTo(((e.clientX-r.left)/r.width)*_cpPlayer.getDuration(), true); updateYTTime(); };
   const fs=document.getElementById('ytFs'); if(fs) fs.onclick=()=>{ const el=document.getElementById('cpPlayer'); if(!el) return; document.fullscreenElement?document.exitFullscreen():el.requestFullscreen&&el.requestFullscreen(); };
   const rp=document.getElementById('ytReplay'); if(rp) rp.onclick=()=>{ if(_cpPlayer){ _cpPlayer.seekTo(0); _cpPlayer.playVideo(); } };
+  const sp=document.getElementById('ytSpeed'); if(sp) sp.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytQualMenu')?.classList.remove('on'); buildSpeedMenu(); document.getElementById('ytSpeedMenu')?.classList.toggle('on'); };
+  const ql=document.getElementById('ytQual'); if(ql) ql.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytSpeedMenu')?.classList.remove('on'); buildQualMenu(); document.getElementById('ytQualMenu')?.classList.toggle('on'); };
+  const mk=document.getElementById('ytMark'); if(mk) mk.onclick=(e)=>{ e.stopPropagation(); addMark(); };
+  renderMarks();
+}
+function buildSpeedMenu(){
+  const menu=document.getElementById('ytSpeedMenu'); if(!menu) return;
+  let cur=1; try{ cur=_cpPlayer&&_cpPlayer.getPlaybackRate?_cpPlayer.getPlaybackRate():1; }catch(e){}
+  menu.innerHTML='<div class="mh">Velocidade</div>'+_cpRates.map(r=>`<div class="mi ${r===cur?'on':''}" data-r="${r}">${r===1?'Normal (1x)':r+'x'}</div>`).join('');
+  menu.querySelectorAll('[data-r]').forEach(mi=> mi.onclick=()=>{ const r=parseFloat(mi.dataset.r); try{_cpPlayer.setPlaybackRate(r);}catch(e){} const b=document.getElementById('ytSpeed'); if(b) b.textContent=(r===1?'1x':r+'x'); menu.classList.remove('on'); });
+}
+function buildQualMenu(){
+  const menu=document.getElementById('ytQualMenu'); if(!menu) return;
+  let levels=[]; try{ levels=(_cpPlayer&&_cpPlayer.getAvailableQualityLevels)?_cpPlayer.getAvailableQualityLevels():[]; }catch(e){}
+  let cur='auto'; try{ cur=(_cpPlayer&&_cpPlayer.getPlaybackQuality)?_cpPlayer.getPlaybackQuality():'auto'; }catch(e){}
+  const opts=['auto', ...levels.filter(l=>l && l!=='auto')];
+  menu.innerHTML='<div class="mh">Qualidade</div>'+opts.map(l=>`<div class="mi ${l===cur?'on':''}" data-q="${l}">${_QLABEL[l]||l}</div>`).join('')+'<div class="note">O YouTube pode ajustar sozinho conforme a conexão.</div>';
+  menu.querySelectorAll('[data-q]').forEach(mi=> mi.onclick=()=>{ try{ _cpPlayer.setPlaybackQuality(mi.dataset.q); }catch(e){} menu.classList.remove('on'); toast('Qualidade: '+(_QLABEL[mi.dataset.q]||mi.dataset.q)); });
+}
+/* marcadores de ponto importante (por usuário + aula) */
+function markKey(){ return 'cp_marks_'+(Auth.user?Auth.user.id:'anon')+'_'+(_cpAula||'x'); }
+function getMarks(){ return (LS.get(markKey(), [])||[]).slice().sort((a,b)=>a.t-b.t); }
+function addMark(){
+  if(!_cpPlayer||!_cpPlayer.getCurrentTime) return;
+  const t=Math.floor(_cpPlayer.getCurrentTime()||0);
+  try{ _cpPlayer.pauseVideo(); }catch(e){}
+  const arr=getMarks();
+  if(arr.some(m=>Math.abs(m.t-t)<1)){ toast('Já existe um marcador aqui'); return; }
+  const label=(prompt('O que é importante nesse ponto? (opcional)','')||'').trim();
+  arr.push({t, label}); LS.set(markKey(), arr); renderMarks(); toast('📌 Ponto marcado em '+fmtTime(t));
+}
+function delMark(t){ LS.set(markKey(), getMarks().filter(m=>m.t!==t)); renderMarks(); }
+function seekMark(t){ if(_cpPlayer){ try{ _cpPlayer.seekTo(t,true); _cpPlayer.playVideo(); }catch(e){} } }
+function renderMarks(){
+  const marks=getMarks();
+  const box=document.getElementById('ytMarks');
+  if(box){
+    box.innerHTML = `<span class="ym-lbl"><svg viewBox="0 0 24 24" width="12" height="12" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Marcadores</span>`
+      + marks.map(m=>`<span class="ym-chip" data-seek="${m.t}"><span class="ym-t">${fmtTime(m.t)}</span>${m.label?(' · '+escHtml(m.label)):''}<span class="ym-x" data-del="${m.t}" title="Remover">×</span></span>`).join('')
+      + `<button class="ym-add" id="ymAdd"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Marcar ponto atual</button>`;
+    box.querySelectorAll('[data-seek]').forEach(c=> c.onclick=(e)=>{ if(e.target.closest('[data-del]')) return; seekMark(parseInt(c.dataset.seek)); });
+    box.querySelectorAll('[data-del]').forEach(x=> x.onclick=(e)=>{ e.stopPropagation(); delMark(parseInt(x.dataset.del)); });
+    const add=document.getElementById('ymAdd'); if(add) add.onclick=addMark;
+  }
+  const track=document.getElementById('ytTrack');
+  if(track){
+    track.querySelectorAll('.yt-mark-tick').forEach(t=>t.remove());
+    const d=(_cpPlayer&&_cpPlayer.getDuration)?_cpPlayer.getDuration():0;
+    if(d) marks.forEach(m=>{ const tk=document.createElement('div'); tk.className='yt-mark-tick'; tk.style.left=(m.t/d*100)+'%'; tk.title=fmtTime(m.t)+(m.label?(' · '+m.label):''); tk.onclick=(e)=>{ e.stopPropagation(); seekMark(m.t); }; track.appendChild(tk); });
+  }
 }
 function stopYT(){ if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
 
@@ -1633,6 +1707,7 @@ function renderAulas(filter='all', q=''){
 function openAula(id){
   const a = DB.aulas().find(x=>x.id===id);
   if(!a) return;
+  _cpAula = id;
   const vid = ytId(a.yt);
   const isDone = Prog.isDone(id);
   const chk = a.chk && a.chk.length ? a.chk : ["Assisti a aula inteira","Anotei o ponto principal","Defini o que vou aplicar esta semana"];
@@ -1653,7 +1728,12 @@ function openAula(id){
           <button class="yt-btn" id="ytPlay" title="Play/Pause"><svg id="ytPlayIcon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></button>
           <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div></div>
           <span class="yt-time" id="ytTime">0:00 / 0:00</span>
+          <button class="yt-btn" id="ytMark" title="Marcar ponto importante"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          <button class="yt-btn txt" id="ytSpeed" title="Velocidade">1x</button>
+          <button class="yt-btn" id="ytQual" title="Qualidade"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-1.1 2.7H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></button>
           <button class="yt-btn" id="ytFs" title="Tela cheia"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <div class="yt-menu" id="ytSpeedMenu"></div>
+          <div class="yt-menu" id="ytQualMenu"></div>
         </div>
         <div class="yt-end" id="ytEnd"><div style="font-weight:800; font-size:15px; color:var(--g100)">Aula concluída</div><button class="btn cyan" id="ytReplay"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rever aula</button></div>
       </div>`
@@ -1664,6 +1744,7 @@ function openAula(id){
     <div class="aula-layout">
       <div>
         ${playerHTML}
+        ${vid?`<div class="yt-marks" id="ytMarks"></div>`:''}
         <div class="aula-info">
           <div style="display:flex; gap:8px; flex-wrap:wrap">
             ${(tagMap[a.tag]?`<span class="tag ${tagMap[a.tag][0]}"><span class="dot"></span>${tagMap[a.tag][1]}</span>`:'')}
@@ -2182,6 +2263,10 @@ document.addEventListener('click',e=>{ const li=e.target.closest('#v-checklists 
 
 /* mobile menu */
 bindPwEye('authPassEye','authPass');
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#ytSpeed,#ytSpeedMenu')) document.getElementById('ytSpeedMenu')?.classList.remove('on');
+  if(!e.target.closest('#ytQual,#ytQualMenu')) document.getElementById('ytQualMenu')?.classList.remove('on');
+});
 document.getElementById('menuBtn').addEventListener('click',()=>document.body.classList.toggle('menu-open'));
 document.getElementById('backBtn').addEventListener('click', goBack);
 document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
