@@ -268,6 +268,37 @@ insert into public.trilhas (id, nome, sup, descricao, grad, ic, ordem) values
 on conflict (id) do nothing;
 
 -- =====================================================================
--- FIM. Depois de rodar, me diga que rodou + me passe a ANON KEY
--- (Settings -> API -> Project API keys -> anon public).
+-- JORNADA — "onde você está" (status por empresa)
+-- Etapas de execução (diagnostico/oferta/anuncios): SÓ admin marca.
+-- Etapas de treino (treino-wpp/scripts/acompanha): o CLIENTE marca.
+-- Sem esta tabela, o app funciona só no navegador (não compartilha).
+-- =====================================================================
+create table if not exists public.jornada (
+  empresa_id  uuid not null references public.empresas(id) on delete cascade,
+  step_key    text not null,
+  done        boolean not null default false,
+  updated_by  uuid references auth.users(id) on delete set null,
+  updated_at  timestamptz not null default now(),
+  primary key (empresa_id, step_key)
+);
+alter table public.jornada enable row level security;
+
+-- lê quem é admin ou membro da empresa
+drop policy if exists jornada_select on public.jornada;
+create policy jornada_select on public.jornada for select to authenticated
+  using ( public.is_admin() or public.is_empresa_member(empresa_id) );
+
+-- admin escreve qualquer etapa
+drop policy if exists jornada_write_admin on public.jornada;
+create policy jornada_write_admin on public.jornada for all to authenticated
+  using ( public.is_admin() ) with check ( public.is_admin() );
+
+-- membro escreve SÓ as etapas de treino, e só da própria empresa
+drop policy if exists jornada_write_membro on public.jornada;
+create policy jornada_write_membro on public.jornada for all to authenticated
+  using ( public.is_empresa_member(empresa_id) and step_key in ('treino-wpp','scripts','acompanha') )
+  with check ( public.is_empresa_member(empresa_id) and step_key in ('treino-wpp','scripts','acompanha') );
+
+-- =====================================================================
+-- FIM.
 -- =====================================================================
