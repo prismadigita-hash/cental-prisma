@@ -412,7 +412,7 @@
   .trilha-card:hover .tc-count{opacity:1}
   .trilha-card .tc-body{position:relative; z-index:2; padding:22px 22px 26px}
   .trilha-card .tc-sup{font-size:clamp(13px, 1.05vw, 16px); font-weight:700; letter-spacing:.4px; line-height:1.06; color:#fff; text-transform:uppercase; text-shadow:0 2px 12px rgba(0,0,0,.72)}
-  .trilha-card h3{font-size:clamp(21px, 2.05vw, 32px); font-weight:900; letter-spacing:-.5px; line-height:.96; color:var(--cyan); margin-top:3px; text-transform:uppercase; text-shadow:0 3px 18px rgba(0,0,0,.6); overflow-wrap:break-word}
+  .trilha-card h3{font-size:clamp(17px, 1.75vw, 31px); font-weight:900; letter-spacing:-.6px; line-height:.98; color:var(--cyan); margin-top:3px; text-transform:uppercase; text-shadow:0 3px 18px rgba(0,0,0,.6)}
   .trilha-card .tc-prog{position:absolute; left:0; bottom:0; z-index:3; height:4px; background:linear-gradient(90deg, var(--green), var(--green-light)); width:0%; border-radius:0 3px 0 0; box-shadow:0 0 12px rgba(111,230,158,.5)}
   .trilha-card .tc-cover-btn{position:absolute; top:14px; right:14px; z-index:4; width:32px; height:32px; border-radius:9px; background:rgba(8,8,12,.62); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.22); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s, border-color .2s}
   .trilha-card:hover .tc-cover-btn{opacity:1}
@@ -554,6 +554,9 @@
   .player .yt-fill{position:absolute; left:0; top:0; bottom:0; background:var(--cyan); border-radius:99px; width:0%}
   .player .yt-time{font-family:var(--mono); font-size:11px; color:#fff; white-space:nowrap}
   .player .yt-btn.txt{font-family:var(--mono); font-size:12px; font-weight:800; min-width:30px}
+  .player .yt-vol{display:flex; align-items:center; flex-shrink:0}
+  .player .yt-vol-range{width:0; opacity:0; transition:width .2s, opacity .2s; height:4px; cursor:pointer; accent-color:var(--cyan)}
+  .player .yt-vol:hover .yt-vol-range, .player .yt-vol-range:focus{width:66px; opacity:1; margin-left:8px}
   .player .yt-mark-tick{position:absolute; top:-3px; width:3px; height:12px; background:var(--warm); border-radius:2px; transform:translateX(-50%); box-shadow:0 0 6px rgba(240,178,103,.85); cursor:pointer; z-index:2}
   .player .yt-menu{position:absolute; right:14px; bottom:52px; z-index:8; background:rgba(12,10,15,.97); border:1px solid rgba(255,255,255,.16); border-radius:11px; padding:6px; display:none; min-width:132px; box-shadow:0 14px 38px rgba(0,0,0,.6)}
   .player .yt-menu.on{display:block}
@@ -1244,7 +1247,7 @@ function setPlayIcon(playing){
 }
 function updateYTTime(){
   if(!_cpPlayer||!_cpPlayer.getDuration) return;
-  if(_cpPlayer.getPlayerState && _cpPlayer.getPlayerState()===1 && Auth.user){ Metrics.addWatch(Auth.user.id, 300); }
+  if(_cpPlayer.getPlayerState && _cpPlayer.getPlayerState()===1 && Auth.user){ Metrics.bufferWatch(300); }
   const d=_cpPlayer.getDuration()||0, c=_cpPlayer.getCurrentTime()||0;
   const fill=document.getElementById('ytFill'); if(fill) fill.style.width=(d?(c/d*100):0)+'%';
   const t=document.getElementById('ytTime'); if(t) t.textContent=fmtTime(c)+' / '+fmtTime(d);
@@ -1261,7 +1264,7 @@ function mountYouTube(vid){
       host:'https://www.youtube-nocookie.com',
       playerVars:{controls:0, modestbranding:1, rel:0, iv_load_policy:3, disablekb:1, playsinline:1, fs:0, showinfo:0},
       events:{
-        onReady:()=>{ _cpReady=true; updateYTTime(); renderMarks(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
+        onReady:()=>{ _cpReady=true; updateYTTime(); renderMarks(); try{ const v=document.getElementById('ytVol'); if(v) v.value=_cpPlayer.getVolume(); }catch(e){} updateVolIcon(); if(_pendingPlay){ _pendingPlay=false; try{_cpPlayer.playVideo();}catch(e){} } },
         onError:()=>{ const p=document.getElementById('cpPlayer'); if(p){ p.classList.remove('playing'); const cv=document.getElementById('ytCover'); if(cv) cv.innerHTML='<div style="position:relative;z-index:1;text-align:center;color:#fff;padding:20px"><div style="font-weight:800;font-size:14px;margin-bottom:6px">Não consegui carregar o vídeo aqui</div><div style="font-size:12px;opacity:.8">Isso costuma acontecer ao abrir o arquivo direto (file://). Na versão publicada funciona normal.</div></div>'; } },
         onStateChange:(e)=>{
           const p=document.getElementById('cpPlayer'); if(!p) return;
@@ -1285,7 +1288,20 @@ function bindYTControls(){
   const sp=document.getElementById('ytSpeed'); if(sp) sp.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytQualMenu')?.classList.remove('on'); buildSpeedMenu(); document.getElementById('ytSpeedMenu')?.classList.toggle('on'); };
   const ql=document.getElementById('ytQual'); if(ql) ql.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytSpeedMenu')?.classList.remove('on'); buildQualMenu(); document.getElementById('ytQualMenu')?.classList.toggle('on'); };
   const mk=document.getElementById('ytMark'); if(mk) mk.onclick=(e)=>{ e.stopPropagation(); addMark(); };
+  const mt=document.getElementById('ytMute'); if(mt) mt.onclick=()=>{ if(!_cpPlayer) return; try{ if(_cpPlayer.isMuted()){ _cpPlayer.unMute(); const v=document.getElementById('ytVol'); if(v && +v.value===0){ _cpPlayer.setVolume(60); v.value=60; } } else { _cpPlayer.mute(); } }catch(e){} updateVolIcon(); };
+  const vl=document.getElementById('ytVol'); if(vl) vl.oninput=()=>{ if(!_cpPlayer) return; const v=+vl.value; try{ _cpPlayer.setVolume(v); if(v===0) _cpPlayer.mute(); else if(_cpPlayer.isMuted()) _cpPlayer.unMute(); }catch(e){} updateVolIcon(); };
   renderMarks();
+}
+function updateVolIcon(){
+  const b=document.getElementById('ytMute'); if(!b||!_cpPlayer) return;
+  let muted=false, v=100; try{ muted=_cpPlayer.isMuted(); v=_cpPlayer.getVolume(); }catch(e){}
+  const off = muted || v===0;
+  b.title = off?'Ativar som':'Mudo';
+  b.innerHTML = off
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/></svg>'
+    : (v<50
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>');
 }
 function buildSpeedMenu(){
   const menu=document.getElementById('ytSpeedMenu'); if(!menu) return;
@@ -1333,7 +1349,7 @@ function renderMarks(){
     if(d) marks.forEach(m=>{ const tk=document.createElement('div'); tk.className='yt-mark-tick'; tk.style.left=(m.t/d*100)+'%'; tk.title=fmtTime(m.t)+(m.label?(' · '+m.label):''); tk.onclick=(e)=>{ e.stopPropagation(); seekMark(m.t); }; track.appendChild(tk); });
   }
 }
-function stopYT(){ if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
+function stopYT(){ try{ Metrics.flushWatch(); }catch(e){} if(_cpPlayer){ try{_cpPlayer.pauseVideo();}catch(e){} } if(_cpTimer){ clearInterval(_cpTimer); _cpTimer=null; } }
 
 /* =====================================================================
    USUÁRIOS (seed de demonstração)  // >>> SUPABASE: virá de auth.users + tabela clientes
@@ -1350,9 +1366,13 @@ const Metrics = {
   all(){ return LS.get('cp_metrics', {}); },
   save(m){ LS.set('cp_metrics', m); },
   row(uid){ const m=this.all(); return m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; },
-  access(uid){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.access=(r.access||0)+1; r.lastAccessTs=Date.now(); m[uid]=r; this.save(m); },
-  addTime(uid,ms){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.timeMs=(r.timeMs||0)+ms; m[uid]=r; this.save(m); },
-  addWatch(uid,ms){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; r.watchMs=(r.watchMs||0)+ms; m[uid]=r; this.save(m); },
+  _watchBuf:0,
+  _ev(uid, tipo, ms, aulaId){ try{ sb.from('eventos').insert({ user_id:uid, tipo, ms:ms||null, aula_id:aulaId||null }).then(function(){},function(){}); }catch(e){} },
+  _local(uid, patch){ const m=this.all(); const r=m[uid]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0}; patch(r); m[uid]=r; this.save(m); },
+  access(uid){ this._local(uid, r=>{ r.access=(r.access||0)+1; r.lastAccessTs=Date.now(); }); this._ev(uid,'acesso'); },
+  addTime(uid,ms){ this._local(uid, r=>{ r.timeMs=(r.timeMs||0)+ms; }); this._ev(uid,'tempo',ms); },
+  bufferWatch(ms){ this._watchBuf += ms; },
+  flushWatch(){ const ms=Math.round(this._watchBuf); if(ms<1000 || !Auth.user) return; this._watchBuf=0; const uid=Auth.user.id; this._local(uid, r=>{ r.watchMs=(r.watchMs||0)+ms; }); this._ev(uid,'watch',ms,_cpAula); },
 };
 function seedDemo(){
   if(!LS.get('cp_metrics', null)){
@@ -1367,16 +1387,30 @@ function seedDemo(){
 let _sessionTimer=null;
 function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<1) return '—'; if(min<60) return min+' min'; const h=Math.floor(min/60), mm=min%60; return h+'h'+(mm?(' '+mm+'m'):''); }
 function fmtAgo(ts){ if(!ts) return 'nunca'; const d=Math.floor((Date.now()-ts)/864e5); if(d<=0) return 'hoje'; if(d===1) return 'ontem'; return 'há '+d+' dias'; }
-function renderMetrics(){
+async function renderMetrics(){
   const wrap=document.getElementById('metricsWrap'); if(!wrap) return;
-  const m=Metrics.all();
+  wrap.innerHTML='<div class="hint" style="color:var(--g500)">Carregando métricas…</div>';
+  // agrega do banco (compartilhado); se falhar, cai pro local
+  let m={}, progByUser={}, fromDB=true;
+  try{
+    const { data:ev, error } = await sb.from('eventos').select('user_id,tipo,ms,created_at');
+    if(error) throw error;
+    (ev||[]).forEach(e=>{
+      const r=m[e.user_id]||(m[e.user_id]={access:0,lastAccessTs:0,timeMs:0,watchMs:0});
+      if(e.tipo==='acesso'){ r.access++; const ts=Date.parse(e.created_at)||0; if(ts>r.lastAccessTs) r.lastAccessTs=ts; }
+      else if(e.tipo==='tempo'){ r.timeMs+=(e.ms||0); }
+      else if(e.tipo==='watch'){ r.watchMs+=(e.ms||0); }
+    });
+    const { data:pg } = await sb.from('progresso').select('user_id');
+    (pg||[]).forEach(r=>{ progByUser[r.user_id]=(progByUser[r.user_id]||0)+1; });
+  }catch(e){ m=Metrics.all(); fromDB=false; }
   const seen={}; const clients=[];
   EMP_CACHE.forEach(e=> (e.membros||[]).forEach(mm=>{ if(mm.user_id && !seen[mm.user_id]){ seen[mm.user_id]=1; clients.push({ id:mm.user_id, name:mm.nome, email:mm.email }); } }));
   const totalAulas=DB.aulas().filter(a=>a.st==='disponivel').length||1;
   let sumWatch=0, ativos=0, sumDone=0;
   const rows=clients.map(u=>{
     const r=m[u.id]||{access:0,lastAccessTs:0,timeMs:0,watchMs:0};
-    const done=new Set(LS.get('cp_prog_'+u.id, [])).size;
+    const done=fromDB ? (progByUser[u.id]||0) : new Set(LS.get('cp_prog_'+u.id, [])).size;
     sumWatch+=r.watchMs||0; sumDone+=done;
     if(r.lastAccessTs && (Date.now()-r.lastAccessTs)<7*864e5) ativos++;
     let eng='off', engT='Nunca acessou';
@@ -1399,8 +1433,12 @@ function renderMetrics(){
       <td class="num">${x.r.access||0}</td>
       <td>${fmtAgo(x.r.lastAccessTs)}</td>
       <td><span class="eng ${x.eng}"><span class="dot"></span>${x.engT}</span></td>
-    </tr>`).join('')}</tbody></table></div>`;
-  wrap.innerHTML = tiles + table + `<p style="font-size:11.5px;color:var(--g500);margin-top:14px;line-height:1.6">Prévia: os dados de <b>${Auth.user?Auth.user.name:''}</b> são reais (seu uso agora — navegue e assista pra ver mudar); os demais são exemplos. Na versão publicada, cada acesso, tempo e vídeo assistido é registrado de verdade, e <b>só gestores</b> enxergam esta tela.</p>`;
+    </tr>`).join('')}</tbody></table>${clients.length?'':'<div class="hint" style="color:var(--g500);padding:10px 0">Nenhum cliente com acesso ainda. Crie acessos em <b>Empresas e acessos</b>.</div>'}</div>`;
+  const src = fromDB
+    ? 'Dados <b>reais e ao vivo</b>: cada acesso, tempo na plataforma e tempo de vídeo assistido é registrado no banco. Só <b>gestores</b> veem esta tela.'
+    : '⚠️ Não consegui ler o banco agora — mostrando dados locais. Confira a conexão e recarregue.';
+  wrap.innerHTML = tiles + `<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn ghost" id="mBtnRefresh"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Atualizar</button></div>` + table + `<p style="font-size:11.5px;color:var(--g500);margin-top:14px;line-height:1.6">${src}</p>`;
+  const rb=document.getElementById('mBtnRefresh'); if(rb) rb.onclick=()=>renderMetrics();
 }
 
 const Auth = {
@@ -1485,9 +1523,20 @@ const Prog = {
   key(){ return 'cp_prog_' + (Auth.user? Auth.user.id : 'anon'); },
   done(){ return new Set(LS.get(this.key(), [])); },
   isDone(id){ return this.done().has(id); },
-  toggle(id){ const s=this.done(); s.has(id)?s.delete(id):s.add(id); LS.set(this.key(), [...s]); },
-  set(id,v){ const s=this.done(); v?s.add(id):s.delete(id); LS.set(this.key(), [...s]); },
+  toggle(id){ const s=this.done(); const willDone=!s.has(id); willDone?s.add(id):s.delete(id); LS.set(this.key(), [...s]); this._sync(id, willDone); },
+  set(id,v){ const s=this.done(); v?s.add(id):s.delete(id); LS.set(this.key(), [...s]); this._sync(id, v); },
+  _sync(id, done){
+    if(!Auth.user) return; const uid=Auth.user.id;
+    try{
+      if(done) sb.from('progresso').upsert({ user_id:uid, aula_id:id }, { onConflict:'user_id,aula_id' }).then(function(){},function(){});
+      else sb.from('progresso').delete().eq('user_id',uid).eq('aula_id',id).then(function(){},function(){});
+    }catch(e){}
+  },
 };
+async function loadProgresso(){
+  if(!Auth.user) return;
+  try{ const { data } = await sb.from('progresso').select('aula_id').eq('user_id', Auth.user.id); if(data) LS.set('cp_prog_'+Auth.user.id, data.map(r=>r.aula_id)); }catch(e){}
+}
 
 /* =====================================================================
    JORNADA — "onde você está" (por empresa)
@@ -1708,6 +1757,7 @@ function openAula(id){
   const a = DB.aulas().find(x=>x.id===id);
   if(!a) return;
   _cpAula = id;
+  if(Auth.user) LS.set('cp_last_'+Auth.user.id, id);   // "continue de onde parou"
   const vid = ytId(a.yt);
   const isDone = Prog.isDone(id);
   const chk = a.chk && a.chk.length ? a.chk : ["Assisti a aula inteira","Anotei o ponto principal","Defini o que vou aplicar esta semana"];
@@ -1726,6 +1776,10 @@ function openAula(id){
         <div class="yt-cover" id="ytCover" style="background-image:url('${ytThumb(vid)}')"><div class="cp"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
         <div class="yt-controls">
           <button class="yt-btn" id="ytPlay" title="Play/Pause"><svg id="ytPlayIcon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></button>
+          <div class="yt-vol" id="ytVolWrap">
+            <button class="yt-btn" id="ytMute" title="Mudo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg></button>
+            <input type="range" id="ytVol" class="yt-vol-range" min="0" max="100" value="100" title="Volume">
+          </div>
           <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div></div>
           <span class="yt-time" id="ytTime">0:00 / 0:00</span>
           <button class="yt-btn" id="ytMark" title="Marcar ponto importante"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
@@ -1829,8 +1883,10 @@ function refreshProgress(){
     else { rt.textContent=doneCount+' de '+total+' aulas'; rs.textContent='Mantenha o ritmo — 1 por dia já muda o jogo'; }
   }
 
-  // continue de onde parou = primeira disponível não concluída (senão a primeira)
-  const next = disponiveis.find(a=>!done.has(a.id)) || disponiveis[0];
+  // continue de onde parou = última aula assistida (senão, primeira não concluída)
+  const lastId = Auth.user ? LS.get('cp_last_'+Auth.user.id, null) : null;
+  const lastAula = lastId ? AULAS.find(a=>a.id===lastId) : null;
+  const next = lastAula || disponiveis.find(a=>!done.has(a.id)) || disponiveis[0];
   const ct = document.getElementById('continueCard');
   if(next && ct){
     ct.dataset.aula = next.id;
@@ -2218,6 +2274,7 @@ function show(view, isBack){
   document.body.classList.remove('menu-open');
   window.scrollTo({top:0});
   const bb=document.getElementById('backBtn'); if(bb) bb.style.display = navStack.length ? 'flex' : 'none';
+  if(view==='inicio') refreshProgress();
   if(view==='trilha') renderJornada();
   if(view==='gerir') renderAdmin();
   if(view==='metricas') renderMetrics();
@@ -2326,7 +2383,7 @@ async function enterApp(){
   navStack=[]; Metrics.access(u.id);
   activeEmpresa = LS.get('cp_active_emp', null);
   if(_sessionTimer) clearInterval(_sessionTimer);
-  _sessionTimer=setInterval(()=>{ if(Auth.user) Metrics.addTime(Auth.user.id, 15000); }, 15000);
+  _sessionTimer=setInterval(()=>{ if(Auth.user && document.visibilityState==='visible'){ Metrics.addTime(Auth.user.id, 30000); Metrics.flushWatch(); } }, 30000);
   document.getElementById('authScreen').classList.remove('on');
   document.getElementById('app').classList.add('on');
   // usuário na UI
@@ -2341,7 +2398,7 @@ async function enterApp(){
   // admin nav
   document.querySelectorAll('.admin-only').forEach(el=> el.style.display = Auth.isAdmin()?'':'none');
   // carrega dados compartilhados do Supabase
-  try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers() ]); }catch(e){}
+  try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers(), loadProgresso() ]); }catch(e){}
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   show('inicio');
@@ -2364,6 +2421,7 @@ document.getElementById('authForm').addEventListener('submit', async e=>{
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  try{ Metrics.flushWatch(); }catch(e){}
   if(_sessionTimer){ clearInterval(_sessionTimer); _sessionTimer=null; }
   await Auth.logout();
   document.getElementById('authEmail').value='';
