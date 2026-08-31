@@ -628,6 +628,12 @@
   .icon-btn:hover{border-color:var(--cyan); color:var(--cyan)}
   .icon-btn.del:hover{border-color:var(--red); color:var(--red)}
   .icon-btn svg{width:15px; height:15px; stroke:currentColor; stroke-width:2; fill:none}
+  .icon-btn.ok:hover{border-color:var(--green); color:var(--green-light)}
+  .mrole{padding:7px 9px; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--g100); font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; flex-shrink:0}
+  .mrole:focus{outline:none; border-color:var(--cyan)}
+  .invite-box{margin-top:12px; background:var(--bg); border:1px solid rgba(111,230,158,.3); border-radius:10px; padding:13px 15px}
+  .invite-box .ib-k{font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--green-light); margin-bottom:8px}
+  .invite-box pre{white-space:pre-wrap; font-family:inherit; font-size:12.5px; color:var(--g300); line-height:1.55; margin-bottom:10px}
   .admin-bar{display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap}
   .admin-bar .ab-count{font-family:var(--mono); font-size:11px; color:var(--g500)}
   /* repetidor de materiais no admin */
@@ -708,6 +714,21 @@
   .es-item .mk{width:22px; height:22px; border-radius:6px; background:var(--navy); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--cyan); flex-shrink:0}
   .es-item .es-check{margin-left:auto; width:15px; height:15px; stroke:var(--green-light); stroke-width:2.6; fill:none; opacity:0; flex-shrink:0}
   .es-item.on .es-check{opacity:1}
+  /* materiais */
+  .material-card{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:18px; cursor:pointer; display:flex; align-items:center; gap:14px; transition:border-color .15s, transform .15s}
+  .material-card:hover{border-color:rgba(255,77,109,.4); transform:translateY(-2px)}
+  .material-card .mc-ic{width:44px; height:44px; border-radius:11px; background:var(--cyan-soft); border:1px solid rgba(255,77,109,.3); display:flex; align-items:center; justify-content:center; flex-shrink:0}
+  .material-card .mc-ic svg{width:20px; height:20px; stroke:var(--cyan); stroke-width:2; fill:none}
+  .material-card .mc-body{flex:1; min-width:0}
+  .material-card h4{font-size:14px; font-weight:800}
+  .material-card p{font-size:12px; color:var(--g500); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mat-modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(5,9,21,.86); backdrop-filter:blur(4px); padding:24px}
+  .mat-modal.on{display:flex; align-items:center; justify-content:center}
+  .mm-box{width:100%; max-width:1000px; height:100%; max-height:90vh; background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .mm-head{display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line)}
+  .mm-head b{flex:1; font-size:14px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mm-actions{display:flex; gap:8px; flex-shrink:0}
+  .mm-box iframe{flex:1; width:100%; border:0; background:#fff}
   @media(max-width:1080px){ .metric-tiles{grid-template-columns:1fr 1fr} }
 
   .menu-btn{display:none; width:38px; height:38px; border-radius:9px; background:var(--navy-deep); border:1px solid var(--line); align-items:center; justify-content:center; cursor:pointer; flex-shrink:0}
@@ -989,13 +1010,9 @@
     <div class="view-head">
       <div class="crumb">Biblioteca de apoio</div>
       <h1>Materiais</h1>
-      <div class="sub">PDFs, cards de bolso e modelos. Cada material é liberado na etapa certa da trilha — nada chega antes da hora de usar.</div>
+      <div class="sub">PDFs, planilhas e cards de bolso. Clique em qualquer um pra abrir aqui dentro da plataforma.</div>
     </div>
-    <div class="mat-grid">
-      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/><path d="M9 13h6M9 17h4"/></svg></div><h4>Manual 9 Passos</h4><p>Em produção pela Prisma. Será liberado junto com o módulo WhatsApp e comercial.</p></div>
-      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div><h4>Modelo de PGM</h4><p>Planilha oficial de acompanhamento. Liberada na etapa Indicadores e PGM.</p></div>
-      <div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><h4>Cards de bolso</h4><p>4 Pilares, régua de follow-up e 6 fechamentos para imprimir. Prepare seu time para aplicar este módulo.</p></div>
-    </div>
+    <div id="materiaisWrap"></div>
   </section>
 
   <!-- ============ VIEW: GERIR AULAS (admin) ============ -->
@@ -1090,6 +1107,19 @@
   </section>
 
 </div>
+</div>
+
+<div class="mat-modal" id="matModal">
+  <div class="mm-box">
+    <div class="mm-head">
+      <b id="matModalTitle">Material</b>
+      <div class="mm-actions">
+        <a id="matModalOpen" href="#" target="_blank" rel="noopener" class="btn ghost"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>Nova aba</a>
+        <button class="btn ghost" id="matModalClose"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>Fechar</button>
+      </div>
+    </div>
+    <iframe id="matModalFrame" src="" title="Material"></iframe>
+  </div>
 </div>
 
 <div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg">Salvo</span></div>
@@ -1251,17 +1281,25 @@ function renderMetrics(){
 const Auth = {
   user:null,
   init(){
-    const uid = LS.get('cp_session', null);
-    if(uid){ this.user = USERS.find(u=>u.id===uid) || null; }
+    this.user = LS.get('cp_session_user', null) || null;
+    if(!this.user){ const uid=LS.get('cp_session',null); if(uid){ this.user=USERS.find(u=>u.id===uid)||null; } }
     return this.user;
   },
   // >>> SUPABASE: supabase.auth.signInWithPassword({email,password})
   login(email, pass){
-    const u = USERS.find(x => x.email.toLowerCase()===String(email).toLowerCase().trim() && x.pass===pass);
-    if(u){ this.user=u; LS.set('cp_session', u.id); return true; }
+    email = String(email).toLowerCase().trim();
+    let u = USERS.find(x => x.email.toLowerCase()===email && x.pass===pass);
+    if(!u){
+      // procura nos membros das empresas (acessos criados no painel)
+      for(const e of EMP.all()){
+        const m = (e.membros||[]).find(mm => (mm.email||'').toLowerCase()===email && mm.senha===pass);
+        if(m){ u = { id:'member:'+m.id, name:m.nome, email:m.email, role:'client', empresaId:e.id, memberRole:m.role }; break; }
+      }
+    }
+    if(u){ this.user=u; LS.set('cp_session_user', u); return true; }
     return false;
   },
-  logout(){ this.user=null; LS.del('cp_session'); },
+  logout(){ this.user=null; LS.del('cp_session_user'); LS.del('cp_session'); },
   isAdmin(){ return this.user && this.user.role==='admin'; },
 };
 
@@ -1685,9 +1723,9 @@ const EMP = {
 function seedEmpresas(){
   if(!LS.get('cp_empresas', null)){
     LS.set('cp_empresas', [
-      {id:'ferraco', nome:'Ferraço', membros:[{id:'m1', nome:'Eduardo (dono)', email:'ferraco@cliente.com', role:'gestor'}]},
-      {id:'metalsul', nome:'Metal Sul', membros:[{id:'m2', nome:'Carlos Souza', email:'metalsul@cliente.com', role:'gestor'},{id:'m3', nome:'Vendedor 1', email:'vend1@metalsul.com', role:'vendedor'}]},
-      {id:'acoforte', nome:'Aço Forte', membros:[{id:'m4', nome:'Aço Forte', email:'acoforte@cliente.com', role:'gestor'}]},
+      {id:'ferraco', nome:'Ferraço', membros:[{id:'m1', nome:'Eduardo (dono)', email:'ferraco@cliente.com', role:'gestor', senha:'cliente123'}]},
+      {id:'metalsul', nome:'Metal Sul', membros:[{id:'m2', nome:'Carlos Souza', email:'metalsul@cliente.com', role:'gestor', senha:'cliente123'},{id:'m3', nome:'Vendedor 1', email:'vend1@metalsul.com', role:'vendedor', senha:'cliente123'}]},
+      {id:'acoforte', nome:'Aço Forte', membros:[{id:'m4', nome:'Aço Forte', email:'acoforte@cliente.com', role:'gestor', senha:'cliente123'}]},
     ]);
   }
 }
@@ -1710,6 +1748,10 @@ function renderEmpSwitch(){
   document.getElementById('empMenu').innerHTML = list.map(e=>`<button type="button" class="es-item ${e.id===activeEmpresa?'on':''}" data-emp="${e.id}"><span class="mk">${e.nome.charAt(0)}</span>${e.nome}<svg class="es-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('');
   document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); });
 }
+function genPass(){ return 'Aulas' + Math.floor(1000 + Math.random()*9000); }
+function inviteMsg(m, empNome){
+  return `Olá, ${m.nome}! 👋\n\nSeu acesso à Central Prisma${empNome?(' — '+empNome):''} está pronto:\n\n🔗 Link: ${location.origin}\n📧 Login: ${m.email}\n🔑 Senha: ${m.senha||''}\n\nÉ só entrar e começar pela trilha "Comece por aqui". Qualquer dúvida, me chama!`;
+}
 function renderEmpresas(){
   const wrap=document.getElementById('empresasWrap'); if(!wrap) return;
   const list=EMP.all();
@@ -1723,8 +1765,9 @@ function renderEmpresas(){
           <div class="af-k">＋ Adicionar membro · ${e.nome}</div>
           <div class="ff-row"><label>Nome</label><input id="mfNome" placeholder="Nome da pessoa"></div>
           <div class="ff-row"><label>E-mail (vira o login)</label><input id="mfEmail" placeholder="pessoa@empresa.com"></div>
-          <div class="ff-row"><label>Papel</label><select id="mfRole"><option value="vendedor">Vendedor</option><option value="gestor">Gestor</option><option value="viewer">Somente leitura</option></select></div>
-          <button type="submit" class="btn green" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>
+          <div class="ff-row"><label>Papel</label><select id="mfRole"><option value="vendedor">Vendedor</option><option value="gestor">Gestor (admin da empresa)</option><option value="viewer">Somente leitura</option></select></div>
+          <div class="ff-row"><label>Senha (login)</label><input id="mfSenha" value="${genPass()}"></div>
+          <button type="submit" class="btn green" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar acesso + copiar convite</button>
           <div class="hint" style="margin-top:10px">No preview isso salva a lista. Na versão publicada, cria o login seguro (Supabase) e libera o acesso da pessoa.</div>
         </form>
         <div>
@@ -1732,8 +1775,9 @@ function renderEmpresas(){
           <div class="admin-list">${e.membros.map(m=>`
             <div class="al-item">
               <div class="al-thumb"><span style="font-weight:800;color:var(--cyan);font-size:14px">${m.nome.charAt(0)}</span></div>
-              <div class="al-meta"><b>${m.nome}</b><span>${m.email} · ${ROLES[m.role]||m.role}</span></div>
-              <div class="al-act"><button class="icon-btn del" data-rm="${m.id}" title="Remover acesso"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
+              <div class="al-meta"><b>${m.nome}</b><span>${m.email}</span></div>
+              <select class="mrole" data-role="${m.id}"><option value="gestor" ${m.role==='gestor'?'selected':''}>Gestor</option><option value="vendedor" ${m.role==='vendedor'?'selected':''}>Vendedor</option><option value="viewer" ${m.role==='viewer'?'selected':''}>Leitura</option></select>
+              <div class="al-act"><button class="icon-btn ok" data-invite="${m.id}" title="Copiar convite"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button><button class="icon-btn del" data-rm="${m.id}" title="Remover acesso"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
             </div>`).join('') || '<div class="empty"><h4>Sem membros ainda</h4><p>Adicione o primeiro acesso ao lado.</p></div>'}</div>
         </div>
       </div>`;
@@ -1741,11 +1785,23 @@ function renderEmpresas(){
     document.getElementById('memberForm').onsubmit=(ev)=>{
       ev.preventDefault();
       const nome=document.getElementById('mfNome').value.trim(), email=document.getElementById('mfEmail').value.trim();
+      const senha=document.getElementById('mfSenha').value.trim()||genPass();
       if(!nome||!email){ toast('Preencha nome e e-mail'); return; }
       const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
-      emp.membros.push({id:'m'+Date.now(), nome, email, role:document.getElementById('mfRole').value});
-      EMP.save(arr); renderEmpresas(); renderEmpSwitch(); toast('Membro adicionado');
+      const novo={id:'m'+Date.now(), nome, email, role:document.getElementById('mfRole').value, senha};
+      emp.membros.push(novo);
+      EMP.save(arr);
+      navigator.clipboard?.writeText(inviteMsg(novo, emp.nome));
+      renderEmpresas(); renderEmpSwitch(); toast('Acesso criado — convite copiado! 📋 Cole no WhatsApp');
     };
+    wrap.querySelectorAll('[data-invite]').forEach(b=> b.onclick=()=>{
+      const emp=EMP.all().find(x=>x.id===empresaSel); const m=emp.membros.find(x=>x.id===b.dataset.invite);
+      if(m){ navigator.clipboard?.writeText(inviteMsg(m, emp.nome)); toast('Convite copiado! 📋 Cole no WhatsApp'); }
+    });
+    wrap.querySelectorAll('[data-role]').forEach(s=> s.onchange=()=>{
+      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel); const m=emp.membros.find(x=>x.id===s.dataset.role);
+      if(m){ m.role=s.value; EMP.save(arr); toast('Papel atualizado'); }
+    });
     wrap.querySelectorAll('[data-rm]').forEach(b=> b.onclick=()=>{
       if(!confirm('Remover o acesso desta pessoa?')) return;
       const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
@@ -1774,6 +1830,60 @@ function renderEmpresas(){
   wrap.querySelectorAll('[data-emp]').forEach(el=> el.onclick=()=>{ empresaSel=el.dataset.emp; renderEmpresas(); });
 }
 
+/* =====================================================================
+   MATERIAIS (admin adiciona · todos abrem dentro da plataforma)
+   ===================================================================== */
+const MAT = {
+  all(){ return LS.get('cp_materiais', []); },
+  save(a){ LS.set('cp_materiais', a); },
+};
+function seedMateriais(){
+  if(!LS.get('cp_materiais', null)){
+    LS.set('cp_materiais', [
+      {id:'mat1', nome:'Manual 9 Passos (PDF · exemplo)', desc:'O material de bolso do método.', url:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'},
+    ]);
+  }
+}
+function renderMateriais(){
+  const wrap=document.getElementById('materiaisWrap'); if(!wrap) return;
+  const list=MAT.all();
+  const adminForm = Auth.isAdmin() ? `
+    <form class="admin-form" id="matForm" style="margin-bottom:20px; position:static" autocomplete="off">
+      <div class="af-k">＋ Adicionar material</div>
+      <div class="ff-row two">
+        <div><label>Nome</label><input id="matNome" placeholder="Ex.: Manual 9 Passos (PDF)"></div>
+        <div><label>Link do arquivo</label><input id="matUrl" placeholder="https://… (PDF, Google Drive, etc.)"></div>
+      </div>
+      <div class="ff-row"><label>Descrição (opcional)</label><input id="matDesc" placeholder="1 linha sobre o material"></div>
+      <button type="submit" class="btn green"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar material</button>
+      <div class="hint" style="margin-top:8px">Dica: no Google Drive, use o link de compartilhamento ("qualquer pessoa com o link"). Todos os clientes veem e abrem aqui dentro.</div>
+    </form>` : '';
+  const cards = list.length ? `<div class="mat-grid">${list.map(m=>`
+    <div class="material-card" data-mat="${m.id}">
+      <div class="mc-ic"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg></div>
+      <div class="mc-body"><h4>${m.nome}</h4><p>${m.desc||'Abrir material'}</p></div>
+      ${Auth.isAdmin()?`<button class="icon-btn del" data-matrm="${m.id}" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>`:''}
+    </div>`).join('')}</div>` :
+    `<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg></div><h4>Nenhum material ainda</h4><p>${Auth.isAdmin()?'Adicione o primeiro material acima.':'Em breve a Prisma disponibiliza materiais aqui.'}</p></div>`;
+  wrap.innerHTML = adminForm + cards;
+  if(Auth.isAdmin()){
+    const f=document.getElementById('matForm');
+    if(f) f.onsubmit=(ev)=>{ ev.preventDefault(); const nome=document.getElementById('matNome').value.trim(), url=document.getElementById('matUrl').value.trim(); if(!nome||!url){ toast('Preencha nome e link'); return; } const arr=MAT.all(); arr.push({id:'mat'+Date.now(), nome, url, desc:document.getElementById('matDesc').value.trim()}); MAT.save(arr); renderMateriais(); toast('Material adicionado'); };
+    wrap.querySelectorAll('[data-matrm]').forEach(b=> b.onclick=(ev)=>{ ev.stopPropagation(); if(!confirm('Remover este material?')) return; MAT.save(MAT.all().filter(x=>x.id!==b.dataset.matrm)); renderMateriais(); toast('Material removido'); });
+  }
+  wrap.querySelectorAll('[data-mat]').forEach(el=> el.onclick=()=> openMaterial(el.dataset.mat));
+}
+function openMaterial(id){
+  const m=MAT.all().find(x=>x.id===id); if(!m) return;
+  let url=m.url;
+  const g=url.match(/drive\.google\.com\/file\/d\/([^/]+)/); if(g) url=`https://drive.google.com/file/d/${g[1]}/preview`;
+  document.getElementById('matModalTitle').textContent=m.nome;
+  document.getElementById('matModalOpen').href=m.url;
+  document.getElementById('matModalFrame').src=url;
+  document.getElementById('matModal').classList.add('on');
+}
+function closeMaterial(){ document.getElementById('matModal').classList.remove('on'); document.getElementById('matModalFrame').src=''; }
+
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 let navStack=[];
@@ -1791,6 +1901,7 @@ function show(view, isBack){
   if(view==='gerir') renderAdmin();
   if(view==='metricas') renderMetrics();
   if(view==='empresas'){ empresaSel=null; renderEmpresas(); }
+  if(view==='materiais') renderMateriais();
 }
 navItems.forEach(n=>n.addEventListener('click',()=>{
   if(n.dataset.view==='aulas'){ trilhaSet=null; setAulasHead(null); setActiveTrilhaChip(''); renderAulas(currentFilter, (document.getElementById('globalSearch').value||'').trim().toLowerCase()); }
@@ -1834,6 +1945,8 @@ document.getElementById('menuBtn').addEventListener('click',()=>document.body.cl
 document.getElementById('backBtn').addEventListener('click', goBack);
 document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
 document.addEventListener('click', e=>{ const sw=document.getElementById('empSwitch'); if(sw && !sw.contains(e.target)) sw.classList.remove('open'); });
+document.getElementById('matModalClose').addEventListener('click', closeMaterial);
+document.getElementById('matModal').addEventListener('click', e=>{ if(e.target.id==='matModal') closeMaterial(); });
 
 /* admin form */
 document.getElementById('afYt').addEventListener('input', ytPrev);
@@ -1881,7 +1994,7 @@ function toast(msg){
    ===================================================================== */
 function enterApp(){
   const u = Auth.user;
-  navStack=[]; seedDemo(); seedEmpresas(); Metrics.access(u.id);
+  navStack=[]; seedDemo(); seedEmpresas(); seedMateriais(); Metrics.access(u.id);
   activeEmpresa = LS.get('cp_active_emp', null);
   if(_sessionTimer) clearInterval(_sessionTimer);
   _sessionTimer=setInterval(()=>{ if(Auth.user) Metrics.addTime(Auth.user.id, 15000); }, 15000);
