@@ -300,21 +300,23 @@
   .welcome{
     background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%);
     border:1px solid var(--line); border-radius:var(--r-card);
-    padding:30px; position:relative; overflow:hidden;
+    padding:18px 24px; position:relative; overflow:hidden;
+    display:flex; align-items:center; gap:24px; flex-wrap:wrap;
   }
+  .welcome .wl-left{flex:1; min-width:240px}
   .welcome::before{
     content:""; position:absolute; top:-90px; right:-60px; width:340px; height:340px; border-radius:50%;
     background:radial-gradient(closest-side, rgba(240,178,103,.12), transparent 70%); pointer-events:none;
   }
   .welcome .mono-label{font-family:var(--mono); font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--amber); margin-bottom:12px; position:relative}
-  .welcome h2{font-size:26px; font-weight:900; letter-spacing:-.5px; line-height:1.2; max-width:460px; position:relative}
+  .welcome h2{font-size:20px; font-weight:900; letter-spacing:-.4px; line-height:1.2; position:relative}
   .welcome h2 .gl{color:var(--green-light)}
-  .welcome p{font-size:13.5px; color:var(--g300); margin-top:10px; max-width:480px; position:relative}
+  .welcome p{display:none}
   /* continue assistindo */
   .continue{
-    margin-top:22px; display:flex; align-items:center; gap:16px;
+    margin-top:0; flex:0 1 430px; display:flex; align-items:center; gap:14px;
     background:var(--bg); border:1px solid rgba(111,230,158,.28);
-    border-radius:12px; padding:12px 14px; position:relative; z-index:1;
+    border-radius:12px; padding:10px 12px; position:relative; z-index:1;
     cursor:pointer; transition:border-color .15s, transform .15s;
   }
   .continue:hover{border-color:rgba(111,230,158,.55); transform:translateY(-1px)}
@@ -408,7 +410,10 @@
   .trilha-card .tc-count{position:absolute; top:16px; left:16px; z-index:2; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#fff; background:rgba(8,8,12,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.14); padding:4px 9px; border-radius:6px}
   .trilha-card .tc-body{position:relative; z-index:2; padding:16px 17px 18px}
   .trilha-card .tc-sup{font-size:12.5px; font-weight:600; color:rgba(255,255,255,.82)}
-  .trilha-card h3{font-size:23px; font-weight:900; letter-spacing:-.6px; line-height:1.02; color:var(--cyan); margin-top:2px; text-transform:uppercase}
+  .trilha-card h3{font-size:26px; font-weight:900; letter-spacing:-.6px; line-height:1.02; color:var(--cyan); margin-top:3px; text-transform:uppercase}
+  .trilha-card .tc-cover-btn{position:absolute; bottom:12px; right:12px; z-index:3; width:30px; height:30px; border-radius:8px; background:rgba(8,8,12,.6); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.22); cursor:pointer; display:flex; align-items:center; justify-content:center}
+  .trilha-card .tc-cover-btn svg{width:15px; height:15px; stroke:#fff; stroke-width:2; fill:none}
+  .trilha-card .tc-cover-btn:hover{border-color:var(--cyan)}
   .trilha-card .tc-meta{display:flex; align-items:center; gap:9px; margin-top:13px}
   .trilha-card .tc-bar{flex:1; height:5px; background:rgba(255,255,255,.2); border-radius:99px; overflow:hidden}
   .trilha-card .tc-fill{height:100%; background:linear-gradient(90deg, var(--green), var(--green-light)); border-radius:99px; width:0%}
@@ -872,9 +877,10 @@
   <!-- ============ VIEW: INÍCIO ============ -->
   <section class="view on" id="v-inicio">
     <div class="welcome">
-      <div class="mono-label">Método Prisma · Aquisição, conversão e acompanhamento</div>
-      <h2 id="welcomeGreet">Bem-vindo à sua central de implantação.</h2>
-      <p>Aqui dentro está o método completo: aulas, scripts, checklists e o acompanhamento dos seus primeiros 90 dias. Siga a trilha — cada etapa prepara a próxima.</p>
+      <div class="wl-left">
+        <div class="mono-label">Método Prisma · Aquisição, conversão e acompanhamento</div>
+        <h2 id="welcomeGreet">Bem-vindo à sua central de implantação.</h2>
+      </div>
       <div class="continue" id="continueCard">
         <div class="ct-thumb" id="continueThumb"><div class="pl2"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
         <div class="ct-meta">
@@ -1381,23 +1387,36 @@ let trilhaSet=null;
 function renderTrilhas(){
   const wrap=document.getElementById('trilhasWrap'); if(!wrap) return;
   const all=DB.aulas(); const done=Prog.done();
+  const covers=LS.get('cp_trilha_covers', {});
+  const admin=Auth.isAdmin();
   wrap.innerHTML = TRILHAS.map(t=>{
     const list=t.aulas.map(id=>all.find(a=>a.id===id)).filter(Boolean);
     const total=list.length||1; const dc=list.filter(a=>done.has(a.id)).length;
     const pct=Math.round(dc/total*100);
+    const cover=covers[t.id];
+    const bg = cover ? `url('${cover.replace(/'/g,'%27')}') center/cover no-repeat` : t.grad;
     return `<div class="trilha-card" data-trilha="${t.id}">
-      <div class="tc-bg" style="background:${t.grad}"></div>
+      <div class="tc-bg" style="background:${bg}"></div>
       <div class="tc-scrim"></div>
       <div class="tc-count">${list.length} aula${list.length!==1?'s':''}</div>
-      <div class="tc-ic"><svg viewBox="0 0 24 24">${t.ic}</svg></div>
+      ${cover?'':`<div class="tc-ic"><svg viewBox="0 0 24 24">${t.ic}</svg></div>`}
       <div class="tc-body">
         <div class="tc-sup">${t.sup}</div>
         <h3>${t.nome}</h3>
         <div class="tc-meta"><div class="tc-bar"><div class="tc-fill" style="width:${pct}%"></div></div><span class="tc-pct">${pct}%</span></div>
       </div>
+      ${admin?`<button class="tc-cover-btn" data-cover="${t.id}" title="Definir capa da trilha"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`:''}
     </div>`;
   }).join('');
   wrap.querySelectorAll('[data-trilha]').forEach(el=> el.onclick=()=>openTrilha(el.dataset.trilha));
+  wrap.querySelectorAll('[data-cover]').forEach(b=> b.onclick=(ev)=>{
+    ev.stopPropagation();
+    const id=b.dataset.cover; const cv=LS.get('cp_trilha_covers',{}); const cur=cv[id]||'';
+    const url=prompt('Cole o link da imagem de capa desta trilha (deixe vazio para remover):', cur);
+    if(url===null) return;
+    if(url.trim()){ cv[id]=url.trim(); } else { delete cv[id]; }
+    LS.set('cp_trilha_covers', cv); renderTrilhas(); toast(url.trim()?'Capa atualizada ✓':'Capa removida');
+  });
 }
 function setAulasHead(t){
   const c=document.getElementById('aulasCrumb'), h=document.getElementById('aulasTitle'), s=document.getElementById('aulasSub');
