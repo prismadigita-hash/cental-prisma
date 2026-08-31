@@ -20,7 +20,7 @@
     --amber:#E89B3C; --amber-soft:rgba(232,155,60,.12);
     --cyan:#FF4D6D; --cyan-soft:rgba(255,77,109,.12);
     --warm:#F0B267; --warm-soft:rgba(240,178,103,.10);
-    --g100:#F4F5F8; --g300:#D4D8E1; --g500:#8A93A8; --g700:#2C3556;
+    --g100:#F4F5F8; --g300:#D4D8E1; --g500:#8A93A8; --g700:#38323F;
     --line:rgba(138,147,168,.16);
     --r-card:14px; --r-btn:10px;
     --mono:'JetBrains Mono',monospace;
@@ -227,7 +227,7 @@
   .topbar{
     display:flex; align-items:center; gap:14px;
     padding:16px 28px;
-    background:rgba(11,21,48,.82); backdrop-filter:blur(12px);
+    background:rgba(23,21,27,.82); backdrop-filter:blur(12px);
     border-bottom:1px solid var(--line);
     position:sticky; top:0; z-index:40;
   }
@@ -251,11 +251,9 @@
   }
   .top-status{display:flex; align-items:center; gap:18px; margin-left:auto}
   .status-chip{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700}
-  .status-chip .pulse{
-    width:8px; height:8px; border-radius:50%; background:var(--green-light);
-    box-shadow:0 0 0 0 rgba(111,230,158,.5); animation:pulse 2.4s infinite;
-  }
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(111,230,158,.45)}70%{box-shadow:0 0 0 7px rgba(111,230,158,0)}100%{box-shadow:0 0 0 0 rgba(111,230,158,0)}}
+  .status-chip .pulse{width:8px; height:8px; border-radius:50%; background:var(--green-light); position:relative}
+  .status-chip .pulse::after{content:""; position:absolute; inset:0; border-radius:50%; background:rgba(111,230,158,.45); animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{transform:scale(1); opacity:.6}70%{transform:scale(2.6); opacity:0}100%{transform:scale(2.6); opacity:0}}
   .prog-mini{display:flex; align-items:center; gap:10px}
   .prog-mini .bar{width:110px; height:6px; background:var(--navy-soft); border-radius:99px; overflow:hidden}
   .prog-mini .fill{height:100%; width:0%; background:linear-gradient(90deg, var(--green), var(--green-light)); border-radius:99px; transition:width .6s ease}
@@ -280,7 +278,7 @@
     color:var(--cyan); margin-bottom:10px; display:flex; align-items:center; gap:8px;
   }
   .view-head .crumb::before{content:""; width:22px; height:1.5px; background:var(--cyan)}
-  .view-head h1{font-size:27px; font-weight:900; letter-spacing:-.6px; line-height:1.1}
+  .view-head h1{font-size:28px; font-weight:900; letter-spacing:-.6px; line-height:1.1}
   .view-head .sub{font-size:13.5px; color:var(--g500); margin-top:8px; max-width:640px}
 
   .panel{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:22px; position:relative}
@@ -335,7 +333,7 @@
   .continue .ct-thumb img{width:100%; height:100%; object-fit:cover}
   .continue .ct-thumb .pl2{
     position:absolute; inset:0; margin:auto; width:32px; height:32px; border-radius:50%;
-    background:rgba(7,11,24,.55); backdrop-filter:blur(2px);
+    background:rgba(11,10,13,.55); backdrop-filter:blur(2px);
     display:flex; align-items:center; justify-content:center;
   }
   .continue .ct-thumb .pl2 svg{width:13px; height:13px; fill:#fff; margin-left:2px}
@@ -403,7 +401,8 @@
 
   /* ============ TRILHAS TEMÁTICAS (home) — cards pôster ============ */
   .home-sec-head{margin:12px 0 16px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
-  .home-sec-head h2{font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--g100)}
+  .home-sec-head h2{font-size:21px; font-weight:800; letter-spacing:-.4px; color:var(--g100); position:relative; padding-left:14px}
+  .home-sec-head h2::before{content:""; position:absolute; left:0; top:4px; bottom:4px; width:3.5px; border-radius:99px; background:linear-gradient(180deg, var(--cyan), rgba(255,77,109,.25))}
   .home-sec-head p{font-size:12.5px; color:var(--g500)}
   .trilhas-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px}
   .trilha-card{position:relative; aspect-ratio:.62; border-radius:18px; overflow:hidden; cursor:pointer; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 10px 34px rgba(0,0,0,.46); transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s}
@@ -472,6 +471,21 @@
   .lnk-gen svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
   .lnk-gen:hover{text-decoration:underline}
 
+  /* ===== polish global ===== */
+  ::-webkit-scrollbar{width:10px; height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(138,147,168,.22); border-radius:99px; border:2px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,77,109,.5)}
+  html{scrollbar-width:thin; scrollbar-color:rgba(138,147,168,.3) transparent}
+  :focus-visible{outline:2px solid var(--cyan); outline-offset:2px; border-radius:6px}
+  .ac-thumb .watch-bar{position:absolute; left:0; bottom:0; height:3.5px; background:linear-gradient(90deg, var(--cyan), #ff7a92); z-index:3; border-radius:0 3px 0 0; box-shadow:0 0 8px rgba(255,77,109,.55)}
+  .sk-card{aspect-ratio:.62; border-radius:18px; border:1px solid rgba(255,255,255,.04); background:linear-gradient(110deg, #141218 30%, #1d1922 45%, #141218 60%); background-size:220% 100%; animation:skm 1.3s linear infinite}
+  @keyframes skm{to{background-position:-220% 0}}
+  .yt-marks .ym-chip .ym-x{position:relative}
+  .yt-marks .ym-chip .ym-x::before{content:""; position:absolute; inset:-10px}
+  .sidebar,.m-wrap,.es-menu{scrollbar-width:thin; scrollbar-color:var(--navy-soft) transparent}
+  @media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important} html{scroll-behavior:auto} }
+
   /* ============ TRILHA ============ */
   .trilha{position:relative; padding-left:34px}
   .trilha::before{content:""; position:absolute; left:11px; top:14px; bottom:14px; width:2px; background:var(--navy-soft)}
@@ -505,16 +519,16 @@
   .aula-card.locked:hover{transform:none; border-color:var(--line); box-shadow:none}
   .ac-thumb{aspect-ratio:16/9; background:var(--navy); display:flex; align-items:center; justify-content:center; position:relative; border-bottom:1px solid var(--line); overflow:hidden}
   .ac-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
-  .ac-thumb .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(7,11,24,.05), rgba(7,11,24,.55))}
+  .ac-thumb .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,10,13,.05), rgba(11,10,13,.55))}
   .ac-thumb::after{content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(255,77,109,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(255,77,109,.04) 1px, transparent 1px); background-size:18px 18px}
   .ac-thumb .pl{width:46px; height:46px; border-radius:50%; background:rgba(255,77,109,.12); border:1.5px solid rgba(255,77,109,.45); display:flex; align-items:center; justify-content:center; position:relative; z-index:1; transition:transform .15s, background .15s}
   .aula-card:hover .ac-thumb .pl{transform:scale(1.08); background:rgba(255,77,109,.22)}
   .ac-thumb .pl svg{width:15px; height:15px; fill:var(--cyan); margin-left:2px}
-  .ac-thumb.has-img .pl{background:rgba(7,11,24,.5); border-color:rgba(255,255,255,.5)}
+  .ac-thumb.has-img .pl{background:rgba(11,10,13,.5); border-color:rgba(255,255,255,.5)}
   .ac-thumb.has-img .pl svg{fill:#fff}
   .aula-card.prod .ac-thumb .pl,.aula-card.locked .ac-thumb .pl{background:rgba(138,147,168,.1); border-color:var(--line)}
   .aula-card.prod .ac-thumb .pl svg,.aula-card.locked .ac-thumb .pl svg{fill:var(--g500)}
-  .ac-thumb .dur{position:absolute; bottom:8px; right:8px; z-index:1; font-family:var(--mono); font-size:9.5px; font-weight:700; background:rgba(5,9,21,.85); color:var(--g300); padding:3px 7px; border-radius:4px}
+  .ac-thumb .dur{position:absolute; bottom:8px; right:8px; z-index:1; font-family:var(--mono); font-size:9.5px; font-weight:700; background:rgba(11,10,13,.85); color:var(--g300); padding:3px 7px; border-radius:4px}
   .ac-thumb .done-badge{position:absolute; top:8px; left:8px; z-index:1; width:22px; height:22px; border-radius:50%; background:var(--green); display:none; align-items:center; justify-content:center}
   .ac-thumb .done-badge svg{width:12px; height:12px; stroke:#fff; stroke-width:3; fill:none}
   .aula-card.completed .ac-thumb .done-badge{display:flex}
@@ -544,7 +558,7 @@
   .player #ytFrame, .player #ytFrame iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
   .player .yt-mask{position:absolute; top:0; left:0; right:0; height:70px; z-index:3; pointer-events:none; background:linear-gradient(180deg, rgba(0,0,0,.6), transparent)}
   .player .yt-cover{position:absolute; inset:0; z-index:4; display:flex; align-items:center; justify-content:center; cursor:pointer; background-size:cover; background-position:center}
-  .player .yt-cover::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,9,21,.4), rgba(5,9,21,.58))}
+  .player .yt-cover::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,10,13,.4), rgba(11,10,13,.58))}
   .player.playing .yt-cover{display:none}
   .player .yt-cover .cp{position:relative; z-index:1; width:74px; height:74px; border-radius:50%; background:rgba(255,77,109,.18); border:2px solid rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; transition:transform .15s; backdrop-filter:blur(2px)}
   .player .yt-cover:hover .cp{transform:scale(1.08)}
@@ -584,10 +598,10 @@
   .yt-marks .ym-add{display:inline-flex; align-items:center; gap:6px; background:transparent; border:1px dashed var(--line); border-radius:99px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--g300); cursor:pointer; font-family:inherit}
   .yt-marks .ym-add:hover{border-color:var(--warm); color:var(--warm)}
   .yt-marks .ym-add svg{width:13px; height:13px; stroke:currentColor; stroke-width:2.2; fill:none}
-  .player .yt-end{position:absolute; inset:0; z-index:6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(5,9,21,.94)}
+  .player .yt-end{position:absolute; inset:0; z-index:6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(11,10,13,.94)}
   .player.ended .yt-end{display:flex}
   .aula-info{margin-top:18px}
-  .aula-info h1{font-size:23px; font-weight:900; letter-spacing:-.5px; margin:10px 0 8px}
+  .aula-info h1{font-size:28px; font-weight:900; letter-spacing:-.6px; line-height:1.15; margin:10px 0 8px}
   .aula-info .resumo{font-size:13.5px; color:var(--g300); max-width:640px}
   .task-box{margin-top:18px; background:rgba(232,155,60,.06); border:1px solid rgba(232,155,60,.3); border-radius:var(--r-card); padding:18px 20px}
   .task-box .tk{font-family:var(--mono); font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--amber); margin-bottom:8px; display:flex; align-items:center; gap:8px}
@@ -757,14 +771,21 @@
   }
   @media(max-width:840px){
     .app.on{grid-template-columns:1fr}
-    .sidebar{position:fixed; z-index:60; transform:translateX(-100%); transition:transform .3s cubic-bezier(.22,1,.36,1); width:260px; box-shadow:8px 0 40px rgba(0,0,0,.5)}
+    .sidebar{position:fixed; z-index:60; transform:translateX(-100%); transition:transform .3s cubic-bezier(.22,1,.36,1); width:260px; box-shadow:8px 0 40px rgba(0,0,0,.5); height:100vh; height:100dvh}
     body.menu-open .sidebar{transform:none}
+    body.menu-open{overflow:hidden}
+    body.menu-open::before{content:""; position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.55); backdrop-filter:blur(2px)}
     .menu-btn{display:flex !important}
     .scripts-grid,.cl-grid,.aulas-grid,.mat-grid{grid-template-columns:1fr}
-    .trilhas-grid{grid-template-columns:repeat(2,1fr); gap:12px}
+    .trilhas-grid{grid-template-columns:repeat(2,1fr); gap:10px}
     .dash-grid{grid-template-columns:1fr}
     .top-status .status-chip span,.prog-mini{display:none}
     .view{padding:20px 16px 50px}
+    #v-inicio{padding-left:16px; padding-right:16px}
+    .icon-btn,.pw-eye,.tc-cover-btn{width:42px; height:42px}
+    .player .yt-btn{min-width:40px; min-height:40px}
+    .fbtn{padding:11px 15px}
+    .al-ord button{width:34px; height:27px}
   }
   .back-btn{display:none; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:9px; background:var(--navy-deep); border:1px solid var(--line); color:var(--g300); cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:700; flex-shrink:0}
   .back-btn svg{width:16px; height:16px; stroke:currentColor; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round}
@@ -818,7 +839,7 @@
   .material-card .mc-body{flex:1; min-width:0}
   .material-card h4{font-size:14px; font-weight:800}
   .material-card p{font-size:12px; color:var(--g500); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .mat-modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(5,9,21,.86); backdrop-filter:blur(4px); padding:24px}
+  .mat-modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(11,10,13,.86); backdrop-filter:blur(4px); padding:24px}
   .mat-modal.on{display:flex; align-items:center; justify-content:center}
   .mm-box{width:100%; max-width:1000px; height:100%; max-height:90vh; background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.6)}
   .mm-head{display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line)}
@@ -1291,7 +1312,17 @@ function mountYouTube(vid){
           const p=document.getElementById('cpPlayer'); if(!p) return;
           if(e.data===YT.PlayerState.PLAYING){ p.classList.add('playing'); p.classList.remove('paused','ended'); setPlayIcon(true); startYTTimer(); if(_resumeAt>3 && !_resumedDone){ _resumedDone=true; try{ if(Math.abs((_cpPlayer.getCurrentTime()||0)-_resumeAt)>5) _cpPlayer.seekTo(_resumeAt, true); }catch(e){} } }
           else if(e.data===YT.PlayerState.PAUSED){ p.classList.add('paused'); p.classList.remove('playing'); setPlayIcon(false); savePos(); }
-          else if(e.data===YT.PlayerState.ENDED){ p.classList.add('ended'); p.classList.remove('playing'); setPlayIcon(false); try{ LS.set(posKey(), {t:0,d:0}); }catch(e){} }
+          else if(e.data===YT.PlayerState.ENDED){
+            p.classList.add('ended'); p.classList.remove('playing'); setPlayIcon(false);
+            try{ LS.set(posKey(), {t:0,d:0}); }catch(e){}
+            // assistiu até o fim = aula concluída (marca sozinho)
+            if(_cpAula && Auth.user && !Prog.isDone(_cpAula)){
+              Prog.set(_cpAula, true);
+              const b=document.getElementById('btnConcluir');
+              if(b){ b.innerHTML='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Concluída ✓'; b.className='btn ghost'; }
+              toast('Aula concluída ✓'); try{ refreshProgress(); }catch(e){}
+            }
+          }
         }
       }
     });
@@ -1703,7 +1734,7 @@ function renderTrilhas(){
     const pct=Math.round(dc/total*100);
     const cover=covers[t.id];
     const bg = cover ? `url('${cover.replace(/'/g,'%27')}') center/cover no-repeat` : t.grad;
-    return `<div class="trilha-card" data-trilha="${t.id}">
+    return `<div class="trilha-card" data-trilha="${t.id}" tabindex="0" role="button" aria-label="${(t.sup+' '+t.nome).trim()}">
       <div class="tc-bg" style="background:${bg}"></div>
       <div class="tc-scrim"></div>
       <div class="tc-count">${list.length} aula${list.length!==1?'s':''}</div>
@@ -1753,8 +1784,13 @@ const tagMap = { essencial:['green','Material essencial'], semana:['cyan','Aplic
 
 function thumbHTML(a, cls){
   const id = ytId(a.yt);
-  if(id){ return `<div class="ac-thumb has-img ${cls||''}"><img src="${ytThumb(id)}" alt="" loading="lazy"><div class="scrim"></div><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span></div>`; }
-  return `<div class="ac-thumb ${cls||''}"><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span></div>`;
+  let wb='';
+  try{
+    const p=LS.get('cp_pos_'+(Auth.user?Auth.user.id:'anon')+'_'+a.id, null);
+    if(p && p.d>0 && p.t>10 && p.t<p.d-15) wb=`<span class="watch-bar" style="width:${Math.min(98,Math.round(p.t/p.d*100))}%"></span>`;
+  }catch(e){}
+  if(id){ return `<div class="ac-thumb has-img ${cls||''}"><img src="${ytThumb(id)}" alt="" loading="lazy"><div class="scrim"></div><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span>${wb}</div>`; }
+  return `<div class="ac-thumb ${cls||''}"><span class="done-badge"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="pl"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><span class="dur">${a.dur||''}</span>${wb}</div>`;
 }
 
 function renderAulas(filter='all', q=''){
@@ -1773,7 +1809,7 @@ function renderAulas(filter='all', q=''){
     const [tc,tl] = stMap[a.st] || stMap.producao;
     const locked = a.st==='bloqueado';
     const extraTag = tagMap[a.tag];
-    return `<div class="aula-card ${a.st==='producao'?'prod':''} ${locked?'locked':''} ${done.has(a.id)?'completed':''}" ${locked?'':`data-aula="${a.id}"`}>
+    return `<div class="aula-card ${a.st==='producao'?'prod':''} ${locked?'locked':''} ${done.has(a.id)?'completed':''}" ${locked?'':`data-aula="${a.id}" tabindex="0" role="button"`}>
         ${thumbHTML(a)}
         <div class="ac-body">
           <div class="am">${num?('Aula '+num):(a.mod||'')}</div>
@@ -1810,6 +1846,12 @@ function renderAulas(filter='all', q=''){
 }
 
 /* ---------- página da aula (player dinâmico) ---------- */
+function nextAulaId(id){
+  const tid=AULA_TRILHA[id]; if(!tid) return null;
+  const t=TRILHAS.find(x=>x.id===tid); if(!t) return null;
+  const i=(t.aulas||[]).indexOf(id);
+  return (i>=0 && i<t.aulas.length-1) ? t.aulas[i+1] : null;
+}
 function openAula(id){
   const a = DB.aulas().find(x=>x.id===id);
   if(!a) return;
@@ -1821,6 +1863,8 @@ function openAula(id){
   const chkDone = new Set(LS.get('cp_chk_'+(Auth.user?Auth.user.id:'anon')+'_'+id, []));
   const resumo = a.resumo || a.d || '';
   const tarefa = a.tarefa || 'Aplique o conteúdo desta aula em pelo menos uma conversa real do seu WhatsApp ainda esta semana.';
+  const nextId = nextAulaId(id);
+  const nextA = nextId ? DB.aulas().find(x=>x.id===nextId) : null;
   const mats = (a.mats||[]).filter(m=>m && (m.nome||m.url));
   const matsHTML = mats.length
     ? mats.map(m=>`<a class="mat-item" href="${m.url||'#'}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>${m.nome||'Material'}<span class="dl">Baixar</span></a>`).join('')
@@ -1848,7 +1892,7 @@ function openAula(id){
           <div class="yt-menu" id="ytSpeedMenu"></div>
           <div class="yt-menu" id="ytQualMenu"></div>
         </div>
-        <div class="yt-end" id="ytEnd"><div style="font-weight:800; font-size:15px; color:var(--g100)">Aula concluída</div><button class="btn cyan" id="ytReplay"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rever aula</button></div>
+        <div class="yt-end" id="ytEnd"><div style="font-weight:800; font-size:15px; color:var(--g100)">Aula concluída ✓</div><div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center"><button class="btn ghost" id="ytReplay"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rever</button>${nextA?`<button class="btn green" id="ytNext">Próxima aula<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`:''}</div>${nextA?`<div style="font-size:12px;color:var(--g500)">A seguir: <b style="color:var(--g300)">${nextA.t}</b></div>`:''}</div>
       </div>`
     : `<div class="player placeholder"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><div class="center"><div class="bigplay"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><div class="pv-t">${a.t}</div><div class="pv-s">Vídeo em produção pela Prisma</div></div></div>`;
 
@@ -1871,6 +1915,7 @@ function openAula(id){
         <div class="aula-nav">
           <button class="btn ghost" data-goto="aulas"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Voltar às aulas</button>
           <button class="btn ${isDone?'ghost':'green'}" id="btnConcluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>${isDone?'Concluída ✓':'Marcar como concluída'}</button>
+          ${nextA?`<button class="btn cyan" id="btnNext" title="${nextA.t}">Próxima aula<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`:''}
         </div>
       </div>
       <aside>
@@ -1893,6 +1938,8 @@ function openAula(id){
     toast(nowDone?'Aula concluída — mandou bem!':'Marcação removida');
     refreshProgress();
   };
+  const nx1=document.getElementById('ytNext'); if(nx1) nx1.onclick=()=>openAula(nextId);
+  const nx2=document.getElementById('btnNext'); if(nx2) nx2.onclick=()=>openAula(nextId);
   bindGoto();
   show('aula');
   if(vid){
@@ -1949,19 +1996,29 @@ function refreshProgress(){
     else { rt.textContent=doneCount+' de '+total+' aulas'; rs.textContent='Mantenha o ritmo — 1 por dia já muda o jogo'; }
   }
 
-  // continue de onde parou = última aula assistida (senão, primeira não concluída)
+  // continue de onde parou = última aula assistida; se já concluída, a próxima pendente
   const lastId = Auth.user ? LS.get('cp_last_'+Auth.user.id, null) : null;
   const lastAula = lastId ? AULAS.find(a=>a.id===lastId) : null;
-  const next = lastAula || disponiveis.find(a=>!done.has(a.id)) || disponiveis[0];
+  const next = (lastAula && !done.has(lastAula.id)) ? lastAula
+    : (disponiveis.find(a=>!done.has(a.id)) || lastAula || disponiveis[0]);
   const ct = document.getElementById('continueCard');
   if(next && ct){
     ct.dataset.aula = next.id;
     document.getElementById('continueT').textContent = next.t;
-    document.getElementById('continueS').textContent = next.mod+' · '+(next.dur||'');
+    let sub = next.mod+' · '+(next.dur||''), bar='';
+    try{
+      const p = Auth.user ? LS.get('cp_pos_'+Auth.user.id+'_'+next.id, null) : null;
+      if(p && p.d>0 && p.t>10 && p.t<p.d-15){
+        sub = 'Retomar de '+fmtTime(p.t)+' · faltam '+fmtTime(p.d-p.t);
+        bar = `<div style="position:absolute;left:0;bottom:0;z-index:2;height:3px;background:linear-gradient(90deg,var(--cyan),#ff7a92);width:${Math.min(98,Math.round(p.t/p.d*100))}%"></div>`;
+      }
+    }catch(e){}
+    document.getElementById('continueS').textContent = sub;
     document.getElementById('continueK').textContent = done.has(next.id)?'Reveja quando quiser':'Continue de onde parou';
     const id = ytId(next.yt);
     const th = document.getElementById('continueThumb');
-    th.innerHTML = (id?`<img src="${ytThumb(id)}" alt="">`:'') + `<div class="pl2"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>`;
+    th.style.position='relative'; th.style.overflow='hidden';
+    th.innerHTML = (id?`<img src="${ytThumb(id)}" alt="">`:'') + `<div class="pl2"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` + bar;
   }
 
   // trilhas temáticas no dash
@@ -2422,6 +2479,11 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#ytQual,#ytQualMenu')) document.getElementById('ytQualMenu')?.classList.remove('on');
 });
 document.getElementById('menuBtn').addEventListener('click',()=>document.body.classList.toggle('menu-open'));
+document.addEventListener('click',e=>{ if(document.body.classList.contains('menu-open') && !e.target.closest('.sidebar') && !e.target.closest('#menuBtn')) document.body.classList.remove('menu-open'); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.body.classList.remove('menu-open');
+  if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('.aula-card,.trilha-card')){ e.preventDefault(); e.target.click(); }
+});
 document.getElementById('backBtn').addEventListener('click', goBack);
 document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
 document.addEventListener('click', e=>{ const sw=document.getElementById('empSwitch'); if(sw && !sw.contains(e.target)) sw.classList.remove('open'); });
@@ -2494,6 +2556,9 @@ async function enterApp(){
   document.getElementById('welcomeGreet').innerHTML = `${greeting()}, <span class="gl">${u.name}</span>. Bora avançar?`;
   // admin nav
   document.querySelectorAll('.admin-only').forEach(el=> el.style.display = Auth.isAdmin()?'':'none');
+  // skeleton nas trilhas enquanto o banco responde
+  const _tw=document.getElementById('trilhasWrap');
+  if(_tw && !_tw.children.length) _tw.innerHTML='<div class="sk-card"></div>'.repeat(4);
   // carrega dados compartilhados do Supabase
   try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers(), loadProgresso() ]); }catch(e){}
   // render
