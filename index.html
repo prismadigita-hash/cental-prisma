@@ -410,8 +410,8 @@
   .trilha-card .tc-ic svg{width:100%; height:100%; stroke:rgba(255,255,255,.9); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round}
   .trilha-card .tc-count{position:absolute; top:16px; left:16px; z-index:2; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#fff; background:rgba(8,8,12,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.14); padding:4px 9px; border-radius:6px}
   .trilha-card .tc-body{position:relative; z-index:2; padding:16px 17px 18px}
-  .trilha-card .tc-sup{font-size:12.5px; font-weight:600; color:rgba(255,255,255,.82)}
-  .trilha-card h3{font-size:26px; font-weight:900; letter-spacing:-.6px; line-height:1.02; color:var(--cyan); margin-top:3px; text-transform:uppercase}
+  .trilha-card .tc-sup{font-size:15px; font-weight:700; letter-spacing:.5px; line-height:1.05; color:#fff; text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  .trilha-card h3{font-size:28px; font-weight:900; letter-spacing:-.4px; line-height:.98; color:var(--cyan); margin-top:2px; text-transform:uppercase; text-shadow:0 3px 16px rgba(0,0,0,.55)}
   .trilha-card .tc-cover-btn{position:absolute; bottom:12px; right:12px; z-index:3; width:30px; height:30px; border-radius:8px; background:rgba(8,8,12,.6); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.22); cursor:pointer; display:flex; align-items:center; justify-content:center}
   .trilha-card .tc-cover-btn svg{width:15px; height:15px; stroke:#fff; stroke-width:2; fill:none}
   .trilha-card .tc-cover-btn:hover{border-color:var(--cyan)}
@@ -419,6 +419,54 @@
   .trilha-card .tc-bar{flex:1; height:5px; background:rgba(255,255,255,.2); border-radius:99px; overflow:hidden}
   .trilha-card .tc-fill{height:100%; background:linear-gradient(90deg, var(--green), var(--green-light)); border-radius:99px; width:0%}
   .trilha-card .tc-pct{font-family:var(--mono); font-size:10px; font-weight:700; color:#fff; white-space:nowrap}
+
+  /* ===== JORNADA (onde você está) ===== */
+  .jornada-legend{display:flex; gap:22px; flex-wrap:wrap; margin:-4px 0 24px}
+  .jornada-legend .jl{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--g300)}
+  .jornada-legend .jl .dot{width:9px; height:9px; border-radius:50%}
+  .jornada-legend .jl .dot.prisma{background:var(--cyan)}
+  .jornada-legend .jl .dot.voce{background:var(--green-light)}
+  .jornada{max-width:840px}
+  .jn-item{display:flex; gap:16px}
+  .jn-rail{display:flex; flex-direction:column; align-items:center; flex-shrink:0}
+  .jn-node{width:36px; height:36px; border-radius:50%; border:2px solid var(--g700); background:var(--navy); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; font-weight:800; color:var(--g500); transition:all .18s}
+  .jn-node svg{width:17px; height:17px; stroke:#fff; stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .jn-line{flex:1; width:2px; background:var(--line); margin:3px 0; min-height:20px}
+  .jn-item:last-child .jn-line{display:none}
+  .jn-body{flex:1; padding-bottom:20px; min-width:0}
+  .jn-card{background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; padding:14px 16px; transition:all .18s}
+  .jn-head{display:flex; align-items:center; gap:12px}
+  .jn-head h3{font-size:16px; font-weight:800; color:var(--g100)}
+  .jn-desc{font-size:13px; color:var(--g500); margin-top:5px; line-height:1.5}
+  .jn-pill{margin-left:auto; font-family:var(--mono); font-size:9px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; padding:4px 9px; border-radius:99px; white-space:nowrap}
+  .jn-pill.p-done{background:rgba(111,230,158,.14); color:var(--green-light)}
+  .jn-pill.p-now{background:rgba(255,77,109,.16); color:var(--cyan)}
+  .jn-pill.p-next{background:rgba(255,255,255,.05); color:var(--g500)}
+  .jn-foot{display:flex; align-items:center; gap:12px; margin-top:12px}
+  .jn-lane{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.4px}
+  .jn-lane.lane-impl{color:var(--cyan)}
+  .jn-lane.lane-treino{color:var(--green-light)}
+  .jn-btn{margin-left:auto; font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--g300); cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px}
+  .jn-btn svg{width:13px; height:13px; stroke:currentColor; stroke-width:2.4; fill:none}
+  .jn-btn.do{border-color:rgba(255,77,109,.5); color:var(--cyan)}
+  .jn-btn.do:hover{background:rgba(255,77,109,.12)}
+  .jn-btn.undo:hover{border-color:var(--g500); color:var(--g100)}
+  .jn-btn:disabled{opacity:.55; cursor:default}
+  .jn-item.done .jn-node{background:var(--green); border-color:var(--green); color:#fff}
+  .jn-item.done .jn-line{background:var(--green)}
+  .jn-item.now .jn-node{border-color:var(--cyan); color:var(--cyan); box-shadow:0 0 0 4px rgba(255,77,109,.16)}
+  .jn-item.now .jn-card{border-color:rgba(255,77,109,.45); box-shadow:0 12px 34px rgba(0,0,0,.4)}
+
+  /* ===== senha: ver/ocultar + gerar ===== */
+  .pw-wrap{position:relative; display:flex; align-items:center}
+  .pw-wrap input{width:100%; padding-right:44px}
+  .pw-eye{position:absolute; right:7px; top:50%; transform:translateY(-50%); width:30px; height:30px; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; border-radius:7px; color:var(--g500)}
+  .pw-eye:hover{color:var(--cyan); background:rgba(255,255,255,.05)}
+  .pw-eye.on{color:var(--cyan)}
+  .pw-eye svg{width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; pointer-events:none}
+  .lnk-gen{margin-top:8px; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:var(--cyan); background:transparent; border:none; cursor:pointer; padding:0; font-family:inherit}
+  .lnk-gen svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .lnk-gen:hover{text-decoration:underline}
 
   /* ============ TRILHA ============ */
   .trilha{position:relative; padding-left:34px}
@@ -763,7 +811,10 @@
     </div>
     <div class="fld">
       <label>Senha</label>
-      <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
+      <div class="pw-wrap">
+        <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="pw-eye" id="authPassEye" aria-label="Mostrar senha" title="Mostrar senha"></button>
+      </div>
     </div>
     <button type="submit" class="auth-btn">
       Entrar na plataforma
@@ -892,22 +943,18 @@
     <div class="trilhas-grid" id="trilhasWrap"></div>
   </section>
 
-  <!-- ============ VIEW: TRILHA ============ -->
+  <!-- ============ VIEW: JORNADA (onde você está) ============ -->
   <section class="view" id="v-trilha">
     <div class="view-head">
-      <div class="crumb">Etapa da implantação</div>
-      <h1>Trilha de implantação</h1>
-      <div class="sub">A instalação do método segue esta ordem. Cada etapa concluída prepara a próxima — nada aqui é opcional, é sequência.</div>
+      <div class="crumb">Sua jornada</div>
+      <h1>Onde você está</h1>
+      <div class="sub" id="jornadaSub">Acompanhe cada etapa da implantação: o que a Prisma já entregou e o que o seu time já treinou. A etapa em destaque é onde vocês estão agora.</div>
     </div>
-    <div class="trilha">
-      <div class="etapa done"><div class="etapa-head"><span class="num">01</span><h3>Diagnóstico 360</h3><span class="tag green"><span class="dot"></span>Concluído</span></div><div class="desc">Produto foco, região, comprador, margem, estrutura comercial e gargalo atual mapeados.</div><div class="meta"><span>Entrega: <b>relatório 360</b></span><span>Duração: <b>semana 1</b></span></div></div>
-      <div class="etapa doing"><div class="etapa-head"><span class="num">02</span><h3>Oferta e campanha</h3><span class="tag cyan"><span class="dot"></span>Em andamento</span></div><div class="desc">Produto âncora, promessa, público prioritário e caminho até o WhatsApp definidos com base no diagnóstico.</div><div class="meta"><span>Entrega: <b>plano de campanha</b></span><span>Status: <b>aprovação de oferta</b></span></div></div>
-      <div class="etapa"><div class="etapa-head"><span class="num">03</span><h3>Anúncios e criativos</h3><span class="tag cyan"><span class="dot"></span>Disponível</span></div><div class="desc">Copy, criativos, roteiros de vídeo e variações para teste. A Prisma produz, você aprova rápido.</div><div class="meta"><span>Entrega: <b>kit de anúncios</b></span></div></div>
-      <div class="etapa"><div class="etapa-head"><span class="num">04</span><h3>WhatsApp e comercial</h3><span class="tag amber"><span class="dot"></span>Em produção</span></div><div class="desc">Treinamento do time, organização do funil, SLA de resposta e método dos 9 Passos aplicado nas conversas reais.</div><div class="meta"><span>Entrega: <b>aulas + manual</b></span></div></div>
-      <div class="etapa"><div class="etapa-head"><span class="num">05</span><h3>Scripts e follow-up</h3><span class="tag amber"><span class="dot"></span>Em produção</span></div><div class="desc">Scripts prontos por situação e régua D+1 · D+3 · D+5 · D+7 instalada na rotina do vendedor.</div><div class="meta"><span>Entrega: <b>biblioteca de scripts</b></span></div></div>
-      <div class="etapa locked"><div class="etapa-head"><span class="num">06</span><h3>Indicadores e PGM</h3><span class="tag gray"><span class="dot"></span>Bloqueado</span></div><div class="desc">Os 12 KPIs do comercial rodando: do investimento ao faturamento, com leitura semanal de gargalo.</div><div class="meta"><span>Libera após: <b>etapa 04</b></span></div></div>
-      <div class="etapa locked"><div class="etapa-head"><span class="num">07</span><h3>Ajustes de 30, 60 e 90 dias</h3><span class="tag gray"><span class="dot"></span>Bloqueado</span></div><div class="desc">Reavaliação de gargalos, correção de rota e abertura da frente de ticket médio.</div><div class="meta"><span>Libera após: <b>D+30</b></span></div></div>
+    <div class="jornada-legend">
+      <span class="jl"><span class="dot prisma"></span>Etapas que a <b>Prisma</b> marca (execução)</span>
+      <span class="jl"><span class="dot voce"></span>Etapas que <b>você</b> marca (treinamento)</span>
     </div>
+    <div class="jornada" id="jornadaWrap"></div>
   </section>
 
   <!-- ============ VIEW: AULAS ============ -->
@@ -1370,6 +1417,88 @@ const Prog = {
 };
 
 /* =====================================================================
+   JORNADA — "onde você está" (por empresa)
+   Etapas de execução (lane 'impl') só o admin/Prisma marca.
+   Etapas de treinamento (lane 'treino') o cliente marca.
+   Persiste na tabela "jornada" (empresa_id, step_key, done); se a
+   tabela ainda não existir, cai pra localStorage por empresa.
+   ===================================================================== */
+const JORNADA = [
+  {k:'diagnostico', lane:'impl',   t:'Diagnóstico',             d:'Entendemos seu negócio, seus números atuais e o principal gargalo.'},
+  {k:'oferta',      lane:'impl',   t:'Ofertas de campanha',     d:'Montamos a oferta e o plano de campanha do seu produto.'},
+  {k:'anuncios',    lane:'impl',   t:'Anúncios no ar',          d:'Criativos publicados — os anúncios já estão rodando e trazendo lead.'},
+  {k:'treino-wpp',  lane:'treino', t:'Treinamento de WhatsApp', d:'Seu time assiste às aulas e aplica o atendimento no WhatsApp.'},
+  {k:'scripts',     lane:'treino', t:'Scripts em uso',          d:'Scripts prontos sendo usados nas conversas do dia a dia.'},
+  {k:'acompanha',   lane:'treino', t:'Acompanhamento',          d:'Leitura dos números toda semana e ajuste de rota com a Prisma.'},
+];
+async function loadJornada(empId){
+  try{
+    const { data, error } = await sb.from('jornada').select('step_key,done').eq('empresa_id', empId);
+    if(error) throw error;
+    return new Set((data||[]).filter(r=>r.done).map(r=>r.step_key));
+  }catch(e){
+    return new Set(LS.get('cp_jornada_'+empId, []));
+  }
+}
+async function saveJornadaStep(empId, key, done){
+  try{
+    const { error } = await sb.from('jornada').upsert(
+      { empresa_id:empId, step_key:key, done, updated_by:(Auth.user?Auth.user.id:null) },
+      { onConflict:'empresa_id,step_key' });
+    if(error) throw error;
+    return true;
+  }catch(e){
+    const s=new Set(LS.get('cp_jornada_'+empId, [])); done?s.add(key):s.delete(key);
+    LS.set('cp_jornada_'+empId, [...s]);
+    return false;
+  }
+}
+async function renderJornada(){
+  const wrap=document.getElementById('jornadaWrap'); if(!wrap) return;
+  const emp=activeEmpresa;
+  const sub=document.getElementById('jornadaSub');
+  if(!emp){ wrap.innerHTML='<div class="hint" style="color:var(--g500)">Nenhuma empresa selecionada.</div>'; return; }
+  wrap.innerHTML='<div class="hint" style="color:var(--g500)">Carregando…</div>';
+  const done = await loadJornada(emp);
+  const admin = Auth.isAdmin();
+  if(sub && admin){ const e=EMP_CACHE.find(x=>x.id===emp); sub.textContent = 'Você marca as etapas de execução (Diagnóstico, Ofertas, Anúncios). O cliente marca o treinamento.' + (e?(' · Empresa: '+e.nome):''); }
+  let currentIdx = JORNADA.findIndex(s=>!done.has(s.k));
+  const total=JORNADA.length, dc=JORNADA.filter(s=>done.has(s.k)).length;
+  wrap.innerHTML = JORNADA.map((s,i)=>{
+    const isDone=done.has(s.k);
+    const now = (i===currentIdx);
+    const cls = isDone?'done':(now?'now':'');
+    const can = admin || s.lane==='treino';
+    const laneLbl = s.lane==='impl'?'Prisma':'Você';
+    const pill = isDone?'<span class="jn-pill p-done">Concluído</span>'
+      : now?'<span class="jn-pill p-now">Estamos aqui</span>'
+      : '<span class="jn-pill p-next">A seguir</span>';
+    const node = isDone?'<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>':String(i+1).padStart(2,'0');
+    let ctrl='';
+    if(can){
+      ctrl = isDone
+        ? `<button class="jn-btn undo" data-step="${s.k}" data-v="0">Desfazer</button>`
+        : `<button class="jn-btn do" data-step="${s.k}" data-v="1"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Marcar concluído</button>`;
+    }
+    return `<div class="jn-item ${cls}">
+      <div class="jn-rail"><div class="jn-node">${node}</div><div class="jn-line"></div></div>
+      <div class="jn-body"><div class="jn-card">
+        <div class="jn-head"><h3>${s.t}</h3>${pill}</div>
+        <div class="jn-desc">${s.d}</div>
+        <div class="jn-foot"><span class="jn-lane lane-${s.lane}">● ${laneLbl} marca</span>${ctrl}</div>
+      </div></div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.jn-btn').forEach(b=> b.onclick=async()=>{
+    const k=b.dataset.step, v=b.dataset.v==='1';
+    wrap.querySelectorAll('.jn-btn').forEach(x=>x.disabled=true);
+    b.textContent='Salvando…';
+    await saveJornadaStep(emp, k, v);
+    renderJornada();
+  });
+}
+
+/* =====================================================================
    SCRIPTS
    ===================================================================== */
 const SCRIPTS = [
@@ -1757,10 +1886,30 @@ async function loadEmpresas(){
 async function createMember(empresaId, nome, email, papel, senha){
   try{
     const sb2 = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth:{ persistSession:false, storageKey:'cp-signup', autoRefreshToken:false } });
+    let uid=null;
     const { data, error } = await sb2.auth.signUp({ email, password:senha, options:{ data:{ nome } } });
-    if(error) return { error: error.message };
-    const uid = data.user && data.user.id;
-    if(!uid) return { error:'Não criou o usuário (verifique se a confirmação de e-mail está desligada em Authentication).' };
+    if(error){
+      // E-mail já existe (tentativa anterior criou o login mas não vinculou, ou a pessoa já tem conta).
+      // Tenta logar com a senha informada pra recuperar o id e concluir o vínculo.
+      if(/already|registered|exист|já/i.test(error.message)){
+        const { data:d2, error:e3 } = await sb2.auth.signInWithPassword({ email, password:senha });
+        if(e3 || !d2 || !d2.user){
+          try{ await sb2.auth.signOut(); }catch(_){}
+          return { error:'Esse e-mail já tem uma conta e a senha informada não confere. Use a senha original dessa conta (ou outro e-mail).', code:'exists' };
+        }
+        uid = d2.user.id;
+      } else {
+        return { error: error.message };
+      }
+    } else {
+      uid = data.user && data.user.id;
+    }
+    if(!uid){ try{ await sb2.auth.signOut(); }catch(_){}; return { error:'Não criou o usuário (verifique se a confirmação de e-mail está desligada em Authentication → Providers → Email).' }; }
+    // Já é membro desta empresa?
+    try{
+      const { data:ex } = await sb.from('empresa_membros').select('id').eq('empresa_id',empresaId).eq('user_id',uid).maybeSingle();
+      if(ex){ try{ await sb2.auth.signOut(); }catch(_){}; return { error:'Essa pessoa já é membro desta empresa.', code:'member' }; }
+    }catch(_){}
     const { error:e2 } = await sb.from('empresa_membros').insert({ empresa_id:empresaId, user_id:uid, papel });
     try{ await sb.from('profiles').update({ nome }).eq('id', uid); }catch(_){}
     try{ await sb2.auth.signOut(); }catch(_){}
@@ -1780,9 +1929,23 @@ function renderEmpSwitch(){
   const active=list.find(e=>e.id===activeEmpresa);
   document.getElementById('empName').textContent = active?active.nome:'—';
   document.getElementById('empMenu').innerHTML = list.map(e=>`<button type="button" class="es-item ${e.id===activeEmpresa?'on':''}" data-emp="${e.id}"><span class="mk">${e.nome.charAt(0)}</span>${e.nome}<svg class="es-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('');
-  document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); });
+  document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); if(currentView()==='trilha') renderJornada(); });
 }
 function genPass(){ return 'Aulas' + Math.floor(1000 + Math.random()*9000); }
+function _hash3(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return (h%900+100); } // 100–999 estável
+function genPassFromEmail(email){
+  const local=(email||'').split('@')[0].replace(/[^a-zA-Z0-9]/g,'') || 'acesso';
+  const base=local.charAt(0).toUpperCase()+local.slice(1,16).toLowerCase();
+  return base+'@'+_hash3((email||'').toLowerCase());   // ex.: cleiton@x.com -> Cleiton@739 (estável p/ o mesmo e-mail)
+}
+const _EYE='<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const _EYE_OFF='<svg viewBox="0 0 24 24"><path d="M17.9 17.9A10.1 10.1 0 0 1 12 20C5 20 1 13 1 13a19 19 0 0 1 5-5.9M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 11 7 11 7a19 19 0 0 1-2.2 3.2m-6.7-1a3 3 0 1 1-4.2-4.3"/><path d="M1 1l22 22"/></svg>';
+function bindPwEye(btnId, inputId){
+  const btn=document.getElementById(btnId), inp=document.getElementById(inputId);
+  if(!btn||!inp) return;
+  btn.innerHTML=_EYE;
+  btn.onclick=()=>{ const show=inp.type==='password'; inp.type=show?'text':'password'; btn.innerHTML=show?_EYE_OFF:_EYE; btn.classList.toggle('on',show); btn.title=show?'Ocultar senha':'Mostrar senha'; };
+}
 function inviteMsg(m, empNome){
   return `Olá, ${m.nome}! 👋\n\nSeu acesso à Central Prisma${empNome?(' — '+empNome):''} está pronto:\n\n🔗 Link: ${location.origin}\n📧 Login: ${m.email}\n🔑 Senha: ${m.senha||''}\n\nÉ só entrar e começar pela trilha "Comece por aqui". Qualquer dúvida, me chama!`;
 }
@@ -1800,7 +1963,13 @@ function renderEmpresas(){
           <div class="ff-row"><label>Nome</label><input id="mfNome" placeholder="Nome da pessoa"></div>
           <div class="ff-row"><label>E-mail (vira o login)</label><input id="mfEmail" placeholder="pessoa@empresa.com"></div>
           <div class="ff-row"><label>Papel</label><select id="mfRole"><option value="vendedor">Vendedor</option><option value="gestor">Gestor (admin da empresa)</option><option value="viewer">Somente leitura</option></select></div>
-          <div class="ff-row"><label>Senha (login)</label><input id="mfSenha" value="${genPass()}"></div>
+          <div class="ff-row"><label>Senha (login) · gerada do e-mail, dá pra editar</label>
+            <div class="pw-wrap">
+              <input id="mfSenha" value="${genPass()}">
+              <button type="button" class="pw-eye" id="mfSenhaEye" title="Mostrar senha"></button>
+            </div>
+            <button type="button" class="lnk-gen" id="mfGen"><svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>Gerar senha a partir do e-mail</button>
+          </div>
           <button type="submit" class="btn green" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar acesso + copiar convite</button>
           <div class="hint" style="margin-top:10px">Cria o login real no Supabase e copia o convite pra você mandar. A pessoa entra com esse e-mail e senha.</div>
         </form>
@@ -1816,10 +1985,19 @@ function renderEmpresas(){
         </div>
       </div>`;
     document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
+    // senha automática a partir do e-mail (fica editável; para de auto-preencher se você digitar na senha)
+    (function(){
+      const mfEmail=document.getElementById('mfEmail'), mfSenha=document.getElementById('mfSenha'), mfGen=document.getElementById('mfGen');
+      bindPwEye('mfSenhaEye','mfSenha');
+      let senhaTouched=false;
+      mfSenha.addEventListener('input',()=>{ senhaTouched=true; });
+      mfEmail.addEventListener('input',()=>{ if(!senhaTouched){ const v=mfEmail.value.trim(); mfSenha.value = v ? genPassFromEmail(v) : genPass(); } });
+      if(mfGen) mfGen.onclick=()=>{ const v=mfEmail.value.trim(); mfSenha.value = v ? genPassFromEmail(v) : genPass(); senhaTouched=false; toast('Senha gerada 🔑'); };
+    })();
     document.getElementById('memberForm').onsubmit=async (ev)=>{
       ev.preventDefault();
       const nome=document.getElementById('mfNome').value.trim(), email=document.getElementById('mfEmail').value.trim();
-      const senha=document.getElementById('mfSenha').value.trim()||genPass();
+      const senha=document.getElementById('mfSenha').value.trim()|| (email?genPassFromEmail(email):genPass());
       if(!nome||!email){ toast('Preencha nome e e-mail'); return; }
       toast('Criando acesso…');
       const res=await createMember(empresaSel, nome, email, document.getElementById('mfRole').value, senha);
@@ -1955,6 +2133,7 @@ function show(view, isBack){
   document.body.classList.remove('menu-open');
   window.scrollTo({top:0});
   const bb=document.getElementById('backBtn'); if(bb) bb.style.display = navStack.length ? 'flex' : 'none';
+  if(view==='trilha') renderJornada();
   if(view==='gerir') renderAdmin();
   if(view==='metricas') renderMetrics();
   if(view==='empresas'){ empresaSel=null; renderEmpresas(); }
@@ -1998,6 +2177,7 @@ document.getElementById('trilhaFilters').addEventListener('click',e=>{
 document.addEventListener('click',e=>{ const li=e.target.closest('#v-checklists .chk li, #v-aula .chk li'); if(li) li.classList.toggle('ok'); });
 
 /* mobile menu */
+bindPwEye('authPassEye','authPass');
 document.getElementById('menuBtn').addEventListener('click',()=>document.body.classList.toggle('menu-open'));
 document.getElementById('backBtn').addEventListener('click', goBack);
 document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
