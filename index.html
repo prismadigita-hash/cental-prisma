@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#0B0A0D; --navy-deep:#17151B; --navy:#201C26; --navy-soft:#322C3A;
@@ -398,7 +399,7 @@
   .home-sec-head{margin:12px 0 16px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
   .home-sec-head h2{font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--g100)}
   .home-sec-head p{font-size:12.5px; color:var(--g500)}
-  .trilhas-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  .trilhas-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
   .trilha-card{position:relative; aspect-ratio:3/4; border-radius:16px; overflow:hidden; cursor:pointer; border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 8px 30px rgba(0,0,0,.42); transition:transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s, border-color .22s}
   .trilha-card:hover{transform:translateY(-5px); border-color:rgba(255,77,109,.5); box-shadow:0 20px 46px rgba(0,0,0,.6)}
   .trilha-card .tc-bg{position:absolute; inset:0; z-index:0; transition:transform .55s cubic-bezier(.22,1,.36,1)}
@@ -666,7 +667,7 @@
     .mat-grid{grid-template-columns:1fr 1fr}
     .admin-grid{grid-template-columns:1fr}
     .admin-form{position:static}
-    .trilhas-grid{grid-template-columns:repeat(2,1fr)}
+    .trilhas-grid{grid-template-columns:repeat(3,1fr)}
   }
   @media(max-width:840px){
     .app.on{grid-template-columns:1fr}
@@ -1141,7 +1142,13 @@
    com  // >>> SUPABASE .
    ===================================================================== */
 
-/* ---------- storage helpers ---------- */
+/* ---------- Supabase ---------- */
+const SUPA_URL='https://anpfvjbjefsmkqratoeg.supabase.co';
+const SUPA_KEY='sb_publishable_5JQVoY5gg4j4Z3t2biPSYA_iG3MhDuH';
+const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+let EMP_CACHE=[], MAT_CACHE=[], COVERS_CACHE={};
+
+/* ---------- storage helpers (localStorage — usado só p/ progresso/metricas interino) ---------- */
 const LS = {
   get(k, def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -1252,7 +1259,8 @@ function fmtAgo(ts){ if(!ts) return 'nunca'; const d=Math.floor((Date.now()-ts)/
 function renderMetrics(){
   const wrap=document.getElementById('metricsWrap'); if(!wrap) return;
   const m=Metrics.all();
-  const clients=USERS.filter(u=>u.role==='client');
+  const seen={}; const clients=[];
+  EMP_CACHE.forEach(e=> (e.membros||[]).forEach(mm=>{ if(mm.user_id && !seen[mm.user_id]){ seen[mm.user_id]=1; clients.push({ id:mm.user_id, name:mm.nome, email:mm.email }); } }));
   const totalAulas=DB.aulas().filter(a=>a.st==='disponivel').length||1;
   let sumWatch=0, ativos=0, sumDone=0;
   const rows=clients.map(u=>{
@@ -1286,26 +1294,30 @@ function renderMetrics(){
 
 const Auth = {
   user:null,
-  init(){
-    this.user = LS.get('cp_session_user', null) || null;
-    if(!this.user){ const uid=LS.get('cp_session',null); if(uid){ this.user=USERS.find(u=>u.id===uid)||null; } }
+  async init(){
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(session && session.user){ await this.loadUser(session.user); }
+    }catch(e){}
     return this.user;
   },
-  // >>> SUPABASE: supabase.auth.signInWithPassword({email,password})
-  login(email, pass){
-    email = String(email).toLowerCase().trim();
-    let u = USERS.find(x => x.email.toLowerCase()===email && x.pass===pass);
-    if(!u){
-      // procura nos membros das empresas (acessos criados no painel)
-      for(const e of EMP.all()){
-        const m = (e.membros||[]).find(mm => (mm.email||'').toLowerCase()===email && mm.senha===pass);
-        if(m){ u = { id:'member:'+m.id, name:m.nome, email:m.email, role:'client', empresaId:e.id, memberRole:m.role }; break; }
-      }
-    }
-    if(u){ this.user=u; LS.set('cp_session_user', u); return true; }
-    return false;
+  async loadUser(u){
+    let role='client', nome=u.email;
+    try{
+      const { data:prof } = await sb.from('profiles').select('papel,nome,email').eq('id',u.id).maybeSingle();
+      if(prof){ role = prof.papel==='admin'?'admin':'client'; nome = prof.nome || prof.email || u.email; }
+    }catch(e){}
+    this.user = { id:u.id, email:u.email, name:nome, role };
   },
-  logout(){ this.user=null; LS.del('cp_session_user'); LS.del('cp_session'); },
+  async login(email, pass){
+    try{
+      const { data, error } = await sb.auth.signInWithPassword({ email:String(email).trim(), password:pass });
+      if(error || !data.user) return false;
+      await this.loadUser(data.user);
+      return true;
+    }catch(e){ return false; }
+  },
+  async logout(){ try{ await sb.auth.signOut(); }catch(e){} this.user=null; },
   isAdmin(){ return this.user && this.user.role==='admin'; },
 };
 
@@ -1387,7 +1399,7 @@ let trilhaSet=null;
 function renderTrilhas(){
   const wrap=document.getElementById('trilhasWrap'); if(!wrap) return;
   const all=DB.aulas(); const done=Prog.done();
-  const covers=LS.get('cp_trilha_covers', {});
+  const covers=COVERS_CACHE;
   const admin=Auth.isAdmin();
   wrap.innerHTML = TRILHAS.map(t=>{
     const list=t.aulas.map(id=>all.find(a=>a.id===id)).filter(Boolean);
@@ -1409,14 +1421,7 @@ function renderTrilhas(){
     </div>`;
   }).join('');
   wrap.querySelectorAll('[data-trilha]').forEach(el=> el.onclick=()=>openTrilha(el.dataset.trilha));
-  wrap.querySelectorAll('[data-cover]').forEach(b=> b.onclick=(ev)=>{
-    ev.stopPropagation();
-    const id=b.dataset.cover; const cv=LS.get('cp_trilha_covers',{}); const cur=cv[id]||'';
-    const url=prompt('Cole o link da imagem de capa desta trilha (deixe vazio para remover):', cur);
-    if(url===null) return;
-    if(url.trim()){ cv[id]=url.trim(); } else { delete cv[id]; }
-    LS.set('cp_trilha_covers', cv); renderTrilhas(); toast(url.trim()?'Capa atualizada ✓':'Capa removida');
-  });
+  wrap.querySelectorAll('[data-cover]').forEach(b=> b.onclick=(ev)=>{ ev.stopPropagation(); pickTrilhaCover(b.dataset.cover); });
 }
 function setAulasHead(t){
   const c=document.getElementById('aulasCrumb'), h=document.getElementById('aulasTitle'), s=document.getElementById('aulasSub');
@@ -1735,27 +1740,36 @@ function collectMats(){
 /* =====================================================================
    EMPRESAS E ACESSOS (admin) + seletor de empresa
    ===================================================================== */
-const EMP = {
-  all(){ return LS.get('cp_empresas', []); },
-  save(a){ LS.set('cp_empresas', a); },
-};
-function seedEmpresas(){
-  if(!LS.get('cp_empresas', null)){
-    LS.set('cp_empresas', [
-      {id:'ferraco', nome:'Ferraço', membros:[{id:'m1', nome:'Eduardo (dono)', email:'ferraco@cliente.com', role:'gestor', senha:'cliente123'}]},
-      {id:'metalsul', nome:'Metal Sul', membros:[{id:'m2', nome:'Carlos Souza', email:'metalsul@cliente.com', role:'gestor', senha:'cliente123'},{id:'m3', nome:'Vendedor 1', email:'vend1@metalsul.com', role:'vendedor', senha:'cliente123'}]},
-      {id:'acoforte', nome:'Aço Forte', membros:[{id:'m4', nome:'Aço Forte', email:'acoforte@cliente.com', role:'gestor', senha:'cliente123'}]},
-    ]);
-  }
+const EMP = { all(){ return EMP_CACHE; } };
+async function loadEmpresas(){
+  try{
+    const { data:emps } = await sb.from('empresas').select('id,nome').order('nome');
+    const { data:mem } = await sb.from('empresa_membros').select('id,empresa_id,papel,user_id');
+    const ids=[...new Set((mem||[]).map(m=>m.user_id))];
+    let pm={};
+    if(ids.length){ const { data:profs } = await sb.from('profiles').select('id,nome,email').in('id', ids); (profs||[]).forEach(p=>{ pm[p.id]=p; }); }
+    const byEmp={};
+    (mem||[]).forEach(m=>{ const p=pm[m.user_id]||{}; (byEmp[m.empresa_id]=byEmp[m.empresa_id]||[]).push({ id:m.id, user_id:m.user_id, role:m.papel, nome:p.nome||p.email||'—', email:p.email||'' }); });
+    EMP_CACHE = (emps||[]).map(e=>({ id:e.id, nome:e.nome, membros: byEmp[e.id]||[] }));
+  }catch(e){ EMP_CACHE=[]; }
+}
+async function createMember(empresaId, nome, email, papel, senha){
+  try{
+    const sb2 = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth:{ persistSession:false, storageKey:'cp-signup', autoRefreshToken:false } });
+    const { data, error } = await sb2.auth.signUp({ email, password:senha, options:{ data:{ nome } } });
+    if(error) return { error: error.message };
+    const uid = data.user && data.user.id;
+    if(!uid) return { error:'Não criou o usuário (verifique se a confirmação de e-mail está desligada em Authentication).' };
+    const { error:e2 } = await sb.from('empresa_membros').insert({ empresa_id:empresaId, user_id:uid, papel });
+    try{ await sb.from('profiles').update({ nome }).eq('id', uid); }catch(_){}
+    try{ await sb2.auth.signOut(); }catch(_){}
+    if(e2) return { error:e2.message };
+    return { ok:true };
+  }catch(e){ return { error:String(e) }; }
 }
 const ROLES={gestor:'Gestor', vendedor:'Vendedor', viewer:'Somente leitura'};
 let activeEmpresa=null, empresaSel=null;
-function empresasForUser(){
-  const all=EMP.all();
-  if(Auth.isAdmin()) return all;
-  const em=((Auth.user&&Auth.user.email)||'').toLowerCase();
-  return all.filter(e=>e.membros.some(m=>(m.email||'').toLowerCase()===em));
-}
+function empresasForUser(){ return EMP_CACHE; }
 function renderEmpSwitch(){
   const box=document.getElementById('empSwitch'); if(!box) return;
   const list=empresasForUser();
@@ -1787,7 +1801,7 @@ function renderEmpresas(){
           <div class="ff-row"><label>Papel</label><select id="mfRole"><option value="vendedor">Vendedor</option><option value="gestor">Gestor (admin da empresa)</option><option value="viewer">Somente leitura</option></select></div>
           <div class="ff-row"><label>Senha (login)</label><input id="mfSenha" value="${genPass()}"></div>
           <button type="submit" class="btn green" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar acesso + copiar convite</button>
-          <div class="hint" style="margin-top:10px">No preview isso salva a lista. Na versão publicada, cria o login seguro (Supabase) e libera o acesso da pessoa.</div>
+          <div class="hint" style="margin-top:10px">Cria o login real no Supabase e copia o convite pra você mandar. A pessoa entra com esse e-mail e senha.</div>
         </form>
         <div>
           <div class="admin-bar"><span class="ab-count">${e.membros.length} membro(s)</span></div>
@@ -1801,31 +1815,31 @@ function renderEmpresas(){
         </div>
       </div>`;
     document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
-    document.getElementById('memberForm').onsubmit=(ev)=>{
+    document.getElementById('memberForm').onsubmit=async (ev)=>{
       ev.preventDefault();
       const nome=document.getElementById('mfNome').value.trim(), email=document.getElementById('mfEmail').value.trim();
       const senha=document.getElementById('mfSenha').value.trim()||genPass();
       if(!nome||!email){ toast('Preencha nome e e-mail'); return; }
-      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
-      const novo={id:'m'+Date.now(), nome, email, role:document.getElementById('mfRole').value, senha};
-      emp.membros.push(novo);
-      EMP.save(arr);
-      navigator.clipboard?.writeText(inviteMsg(novo, emp.nome));
-      renderEmpresas(); renderEmpSwitch(); toast('Acesso criado — convite copiado! 📋 Cole no WhatsApp');
+      toast('Criando acesso…');
+      const res=await createMember(empresaSel, nome, email, document.getElementById('mfRole').value, senha);
+      if(res.error){ toast('Erro: '+res.error); return; }
+      navigator.clipboard?.writeText(inviteMsg({nome,email,senha}, e.nome));
+      await loadEmpresas(); renderEmpresas(); renderEmpSwitch(); toast('Acesso criado — convite copiado! 📋 Cole no WhatsApp');
     };
     wrap.querySelectorAll('[data-invite]').forEach(b=> b.onclick=()=>{
-      const emp=EMP.all().find(x=>x.id===empresaSel); const m=emp.membros.find(x=>x.id===b.dataset.invite);
-      if(m){ navigator.clipboard?.writeText(inviteMsg(m, emp.nome)); toast('Convite copiado! 📋 Cole no WhatsApp'); }
+      const m=e.membros.find(x=>x.id===b.dataset.invite);
+      if(m){ const msg=`Olá, ${m.nome}! 👋\n\nSeu acesso à Central Prisma — ${e.nome}:\n\n🔗 Link: ${location.origin}\n📧 Login: ${m.email}\n🔑 Senha: (a que defini quando criei seu acesso)\n\nÉ só entrar e começar pela trilha "Comece por aqui".`; navigator.clipboard?.writeText(msg); toast('Convite copiado! 📋'); }
     });
-    wrap.querySelectorAll('[data-role]').forEach(s=> s.onchange=()=>{
-      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel); const m=emp.membros.find(x=>x.id===s.dataset.role);
-      if(m){ m.role=s.value; EMP.save(arr); toast('Papel atualizado'); }
+    wrap.querySelectorAll('[data-role]').forEach(s=> s.onchange=async ()=>{
+      const { error }=await sb.from('empresa_membros').update({ papel:s.value }).eq('id', s.dataset.role);
+      if(error){ toast('Erro: '+error.message); return; }
+      await loadEmpresas(); toast('Papel atualizado');
     });
-    wrap.querySelectorAll('[data-rm]').forEach(b=> b.onclick=()=>{
+    wrap.querySelectorAll('[data-rm]').forEach(b=> b.onclick=async ()=>{
       if(!confirm('Remover o acesso desta pessoa?')) return;
-      const arr=EMP.all(); const emp=arr.find(x=>x.id===empresaSel);
-      emp.membros=emp.membros.filter(m=>m.id!==b.dataset.rm);
-      EMP.save(arr); renderEmpresas(); toast('Acesso removido');
+      const { error }=await sb.from('empresa_membros').delete().eq('id', b.dataset.rm);
+      if(error){ toast('Erro: '+error.message); return; }
+      await loadEmpresas(); renderEmpresas(); renderEmpSwitch(); toast('Acesso removido');
     });
     return;
   }
@@ -1840,11 +1854,12 @@ function renderEmpresas(){
         <div class="al-meta"><b>${e.nome}</b><span>${e.membros.length} membro(s)</span></div>
         <div class="al-act"><button class="icon-btn" title="Gerenciar membros"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>
       </div>`).join('') || '<div class="empty"><h4>Nenhuma empresa</h4><p>Crie a primeira acima.</p></div>'}</div>`;
-  document.getElementById('empForm').onsubmit=(ev)=>{
+  document.getElementById('empForm').onsubmit=async (ev)=>{
     ev.preventDefault();
     const nome=document.getElementById('empNome').value.trim(); if(!nome){ toast('Digite o nome da empresa'); return; }
-    const arr=EMP.all(); arr.push({id:'e'+Date.now(), nome, membros:[]}); EMP.save(arr);
-    renderEmpresas(); renderEmpSwitch(); toast('Empresa criada');
+    const { error }=await sb.from('empresas').insert({ nome });
+    if(error){ toast('Erro: '+error.message); return; }
+    await loadEmpresas(); renderEmpresas(); renderEmpSwitch(); toast('Empresa criada');
   };
   wrap.querySelectorAll('[data-emp]').forEach(el=> el.onclick=()=>{ empresaSel=el.dataset.emp; renderEmpresas(); });
 }
@@ -1852,16 +1867,30 @@ function renderEmpresas(){
 /* =====================================================================
    MATERIAIS (admin adiciona · todos abrem dentro da plataforma)
    ===================================================================== */
-const MAT = {
-  all(){ return LS.get('cp_materiais', []); },
-  save(a){ LS.set('cp_materiais', a); },
-};
-function seedMateriais(){
-  if(!LS.get('cp_materiais', null)){
-    LS.set('cp_materiais', [
-      {id:'mat1', nome:'Manual 9 Passos (PDF · exemplo)', desc:'O material de bolso do método.', url:'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'},
-    ]);
-  }
+const MAT = { all(){ return MAT_CACHE; } };
+async function loadMateriais(){
+  try{ const { data } = await sb.from('materiais').select('id,nome,url,descricao').is('aula_id', null).order('created_at'); MAT_CACHE = (data||[]).map(m=>({ id:m.id, nome:m.nome, url:m.url, desc:m.descricao })); }catch(e){ MAT_CACHE=[]; }
+}
+async function loadCovers(){
+  try{ const { data } = await sb.from('trilhas').select('id,cover_url'); COVERS_CACHE={}; (data||[]).forEach(t=>{ if(t.cover_url) COVERS_CACHE[t.id]=t.cover_url; }); }catch(e){ COVERS_CACHE={}; }
+}
+function pickTrilhaCover(id){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async ()=>{
+    const file=inp.files&&inp.files[0]; if(!file) return;
+    if(file.size>5*1024*1024){ toast('Imagem muito grande (máx 5MB)'); return; }
+    toast('Enviando capa…');
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const path=`trilhas/${id}-${Date.now()}.${ext}`;
+    const { error:upErr }=await sb.storage.from('capas').upload(path, file, { upsert:true, contentType:file.type });
+    if(upErr){ toast('Erro no upload: '+upErr.message); return; }
+    const { data:pub }=sb.storage.from('capas').getPublicUrl(path);
+    const url=pub&&pub.publicUrl;
+    const { error }=await sb.from('trilhas').update({ cover_url:url }).eq('id', id);
+    if(error){ toast('Erro ao salvar: '+error.message); return; }
+    COVERS_CACHE[id]=url; renderTrilhas(); toast('Capa atualizada ✓');
+  };
+  inp.click();
 }
 function renderMateriais(){
   const wrap=document.getElementById('materiaisWrap'); if(!wrap) return;
@@ -1887,8 +1916,8 @@ function renderMateriais(){
   wrap.innerHTML = adminForm + cards;
   if(Auth.isAdmin()){
     const f=document.getElementById('matForm');
-    if(f) f.onsubmit=(ev)=>{ ev.preventDefault(); const nome=document.getElementById('matNome').value.trim(), url=document.getElementById('matUrl').value.trim(); if(!nome||!url){ toast('Preencha nome e link'); return; } const arr=MAT.all(); arr.push({id:'mat'+Date.now(), nome, url, desc:document.getElementById('matDesc').value.trim()}); MAT.save(arr); renderMateriais(); toast('Material adicionado'); };
-    wrap.querySelectorAll('[data-matrm]').forEach(b=> b.onclick=(ev)=>{ ev.stopPropagation(); if(!confirm('Remover este material?')) return; MAT.save(MAT.all().filter(x=>x.id!==b.dataset.matrm)); renderMateriais(); toast('Material removido'); });
+    if(f) f.onsubmit=async (ev)=>{ ev.preventDefault(); const nome=document.getElementById('matNome').value.trim(), url=document.getElementById('matUrl').value.trim(); if(!nome||!url){ toast('Preencha nome e link'); return; } const { error }=await sb.from('materiais').insert({ nome, url, descricao:document.getElementById('matDesc').value.trim()||null }); if(error){ toast('Erro: '+error.message); return; } await loadMateriais(); renderMateriais(); toast('Material adicionado'); };
+    wrap.querySelectorAll('[data-matrm]').forEach(b=> b.onclick=async (ev)=>{ ev.stopPropagation(); if(!confirm('Remover este material?')) return; const { error }=await sb.from('materiais').delete().eq('id', b.dataset.matrm); if(error){ toast('Erro: '+error.message); return; } await loadMateriais(); renderMateriais(); toast('Material removido'); });
   }
   wrap.querySelectorAll('[data-mat]').forEach(el=> el.onclick=()=> openMaterial(el.dataset.mat));
 }
@@ -2011,9 +2040,9 @@ function toast(msg){
 /* =====================================================================
    LOGIN / SESSÃO
    ===================================================================== */
-function enterApp(){
+async function enterApp(){
   const u = Auth.user;
-  navStack=[]; seedDemo(); seedEmpresas(); seedMateriais(); Metrics.access(u.id);
+  navStack=[]; Metrics.access(u.id);
   activeEmpresa = LS.get('cp_active_emp', null);
   if(_sessionTimer) clearInterval(_sessionTimer);
   _sessionTimer=setInterval(()=>{ if(Auth.user) Metrics.addTime(Auth.user.id, 15000); }, 15000);
@@ -2030,6 +2059,8 @@ function enterApp(){
   document.getElementById('welcomeGreet').innerHTML = `${greeting()}, <span class="gl">${u.name}</span>. Bora avançar?`;
   // admin nav
   document.querySelectorAll('.admin-only').forEach(el=> el.style.display = Auth.isAdmin()?'':'none');
+  // carrega dados compartilhados do Supabase
+  try{ await Promise.all([ loadEmpresas(), loadMateriais(), loadCovers() ]); }catch(e){}
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   show('inicio');
@@ -2040,17 +2071,20 @@ function showLogin(){
   document.getElementById('authScreen').classList.add('on');
 }
 
-document.getElementById('authForm').addEventListener('submit', e=>{
+document.getElementById('authForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const email = document.getElementById('authEmail').value;
   const pass = document.getElementById('authPass').value;
-  if(Auth.login(email, pass)){ document.getElementById('authErr').classList.remove('on'); enterApp(); }
+  const btn = e.target.querySelector('.auth-btn'); if(btn) btn.disabled=true;
+  const ok = await Auth.login(email, pass);
+  if(btn) btn.disabled=false;
+  if(ok){ document.getElementById('authErr').classList.remove('on'); await enterApp(); }
   else { document.getElementById('authErr').classList.add('on'); }
 });
 
-document.getElementById('logoutBtn').addEventListener('click', ()=>{
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
   if(_sessionTimer){ clearInterval(_sessionTimer); _sessionTimer=null; }
-  Auth.logout();
+  await Auth.logout();
   document.getElementById('authEmail').value='';
   document.getElementById('authPass').value='';
   showLogin();
@@ -2058,7 +2092,7 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 
 /* init */
 setMats([]);
-if(Auth.init()){ enterApp(); } else { showLogin(); }
+(async ()=>{ if(await Auth.init()){ await enterApp(); } else { showLogin(); } })();
 </script>
 
 </body>
