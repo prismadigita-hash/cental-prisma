@@ -569,8 +569,11 @@
   .player:hover .yt-controls, .player.paused .yt-controls{opacity:1}
   .player .yt-btn{background:none; border:none; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; padding:0; flex-shrink:0}
   .player .yt-btn svg{width:20px; height:20px}
-  .player .yt-track{flex:1; height:6px; background:rgba(255,255,255,.25); border-radius:99px; cursor:pointer; position:relative}
-  .player .yt-fill{position:absolute; left:0; top:0; bottom:0; background:var(--cyan); border-radius:99px; width:0%}
+  .player .yt-track{flex:1; height:6px; background:rgba(255,255,255,.25); border-radius:99px; cursor:pointer; position:relative; padding:9px 0; background-clip:content-box; transition:height .12s}
+  .player .yt-track:hover, .player .yt-track.dragging{background-color:rgba(255,255,255,.32)}
+  .player .yt-fill{position:absolute; left:0; top:9px; bottom:9px; background:var(--cyan); border-radius:99px; width:0%}
+  .player .yt-knob{position:absolute; top:50%; left:0%; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,.6); transform:translate(-50%,-50%) scale(0); transition:transform .12s; z-index:2; pointer-events:none}
+  .player .yt-track:hover .yt-knob, .player .yt-track.dragging .yt-knob{transform:translate(-50%,-50%) scale(1)}
   .player .yt-time{font-family:var(--mono); font-size:11px; color:#fff; white-space:nowrap}
   .player .yt-btn.txt{font-family:var(--mono); font-size:12px; font-weight:800; min-width:30px}
   .player .yt-btn.cc{font-size:11px; letter-spacing:.5px; border:1px solid rgba(255,255,255,.4); border-radius:5px; padding:1px 5px; min-width:0; opacity:.6}
@@ -1264,7 +1267,7 @@ function ytThumb(id){ return id ? `https://img.youtube.com/vi/${id}/hqdefault.jp
 function ytEmbed(id){ return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`; }
 
 /* ---------- player customizado (esconde marca do YouTube) ---------- */
-let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false, _cpAula=null, _lastPosSave=0, _resumeAt=0, _resumedDone=false;
+let _cpPlayer=null, _cpTimer=null, _ytQueue=[], _cpReady=false, _pendingPlay=false, _cpAula=null, _lastPosSave=0, _resumeAt=0, _resumedDone=false, _cpDragging=false;
 const _cpRates=[0.5, 0.75, 1, 1.25, 1.5, 2];
 const _QLABEL={highres:'4K+', hd2160:'2160p', hd1440:'1440p', hd1080:'1080p', hd720:'720p', large:'480p', medium:'360p', small:'240p', tiny:'144p', auto:'Automática', default:'Automática'};
 function escHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -1287,8 +1290,33 @@ function updateYTTime(){
   if(_playing && Auth.user){ Metrics.bufferWatch(300); }
   if(_playing){ const now=Date.now(); if(now-_lastPosSave>5000){ _lastPosSave=now; savePos(); } }
   const d=_cpPlayer.getDuration()||0, c=_cpPlayer.getCurrentTime()||0;
-  const fill=document.getElementById('ytFill'); if(fill) fill.style.width=(d?(c/d*100):0)+'%';
-  const t=document.getElementById('ytTime'); if(t) t.textContent=fmtTime(c)+' / '+fmtTime(d);
+  if(!_cpDragging){
+    const pct = d?(c/d*100):0;
+    const fill=document.getElementById('ytFill'); if(fill) fill.style.width=pct+'%';
+    const knob=document.getElementById('ytKnob'); if(knob) knob.style.left=pct+'%';
+    const t=document.getElementById('ytTime'); if(t) t.textContent=fmtTime(c)+' / '+fmtTime(d);
+  }
+}
+function seekBy(delta){
+  if(!_cpPlayer||!_cpPlayer.getDuration) return;
+  const d=_cpPlayer.getDuration()||0, c=_cpPlayer.getCurrentTime()||0;
+  const nt=Math.max(0, Math.min(d, c+delta));
+  _cpPlayer.seekTo(nt, true); updateYTTime();
+  toast((delta<0?'⏪ ':'⏩ ')+fmtTime(nt));
+}
+let _seekBound=false;
+function bindSeekDrag(){
+  const track=document.getElementById('ytTrack'); if(!track) return;
+  const posFromX=(x)=>{ const t=document.getElementById('ytTrack'); if(!t) return 0; const r=t.getBoundingClientRect(); return Math.max(0, Math.min(1, (x-r.left)/r.width)); };
+  const preview=(f)=>{ const d=(_cpPlayer&&_cpPlayer.getDuration)?_cpPlayer.getDuration():0; const pct=f*100; const fill=document.getElementById('ytFill'), kn=document.getElementById('ytKnob'), tl=document.getElementById('ytTime'); if(fill) fill.style.width=pct+'%'; if(kn) kn.style.left=pct+'%'; if(tl&&d) tl.textContent=fmtTime(f*d)+' / '+fmtTime(d); };
+  const commit=(f)=>{ if(_cpPlayer&&_cpPlayer.getDuration) _cpPlayer.seekTo(f*_cpPlayer.getDuration(), true); _cpDragging=false; const t=document.getElementById('ytTrack'); if(t) t.classList.remove('dragging'); setTimeout(updateYTTime,60); };
+  track.onmousedown=(e)=>{ if(!_cpPlayer||!_cpPlayer.getDuration) return; e.preventDefault(); _cpDragging=true; track.classList.add('dragging'); preview(posFromX(e.clientX)); };
+  track.ontouchstart=(e)=>{ if(!_cpPlayer||!_cpPlayer.getDuration) return; _cpDragging=true; track.classList.add('dragging'); preview(posFromX(e.touches[0].clientX)); };
+  track.ontouchmove=(e)=>{ if(_cpDragging){ e.preventDefault(); preview(posFromX(e.touches[0].clientX)); } };
+  track.ontouchend=(e)=>{ if(_cpDragging) commit(posFromX((e.changedTouches[0]||{}).clientX||0)); };
+  if(_seekBound) return; _seekBound=true;
+  window.addEventListener('mousemove', e=>{ if(_cpDragging) preview(posFromX(e.clientX)); });
+  window.addEventListener('mouseup', e=>{ if(_cpDragging) commit(posFromX(e.clientX)); });
 }
 function startYTTimer(){ if(_cpTimer) clearInterval(_cpTimer); _cpTimer=setInterval(updateYTTime,300); }
 function mountYouTube(vid){
@@ -1334,7 +1362,9 @@ function bindYTControls(){
   const cover=document.getElementById('ytCover'); if(cover) cover.onclick=()=>{ if(_cpReady && _cpPlayer){ try{_cpPlayer.playVideo();}catch(e){} } else { _pendingPlay=true; } };
   const shield=document.getElementById('ytShield'); if(shield) shield.onclick=togglePlay;
   const pb=document.getElementById('ytPlay'); if(pb) pb.onclick=togglePlay;
-  const track=document.getElementById('ytTrack'); if(track) track.onclick=(e)=>{ if(!_cpPlayer||!_cpPlayer.getDuration) return; const r=track.getBoundingClientRect(); _cpPlayer.seekTo(((e.clientX-r.left)/r.width)*_cpPlayer.getDuration(), true); updateYTTime(); };
+  const b10=document.getElementById('ytBack10'); if(b10) b10.onclick=()=>seekBy(-10);
+  const f10=document.getElementById('ytFwd10'); if(f10) f10.onclick=()=>seekBy(10);
+  bindSeekDrag();
   const fs=document.getElementById('ytFs'); if(fs) fs.onclick=()=>{ const el=document.getElementById('cpPlayer'); if(!el) return; document.fullscreenElement?document.exitFullscreen():el.requestFullscreen&&el.requestFullscreen(); };
   const rp=document.getElementById('ytReplay'); if(rp) rp.onclick=()=>{ if(_cpPlayer){ _cpPlayer.seekTo(0); _cpPlayer.playVideo(); } };
   const sp=document.getElementById('ytSpeed'); if(sp) sp.onclick=(e)=>{ e.stopPropagation(); document.getElementById('ytQualMenu')?.classList.remove('on'); buildSpeedMenu(); document.getElementById('ytSpeedMenu')?.classList.toggle('on'); };
@@ -1877,12 +1907,14 @@ function openAula(id){
         <div class="yt-shield" id="ytShield"></div>
         <div class="yt-cover" id="ytCover" style="background-image:url('${ytThumb(vid)}')"><div class="cp"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div></div>
         <div class="yt-controls">
+          <button class="yt-btn" id="ytBack10" title="Voltar 10s"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 8 6 12l5 4"/><path d="M6 12h9a4 4 0 0 1 0 8h-2"/></svg></button>
           <button class="yt-btn" id="ytPlay" title="Play/Pause"><svg id="ytPlayIcon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></button>
+          <button class="yt-btn" id="ytFwd10" title="Avançar 10s"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 8 5 4-5 4"/><path d="M18 12H9a4 4 0 0 0 0 8h2"/></svg></button>
           <div class="yt-vol" id="ytVolWrap">
             <button class="yt-btn" id="ytMute" title="Mudo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg></button>
             <input type="range" id="ytVol" class="yt-vol-range" min="0" max="100" value="100" title="Volume">
           </div>
-          <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div></div>
+          <div class="yt-track" id="ytTrack"><div class="yt-fill" id="ytFill"></div><div class="yt-knob" id="ytKnob"></div></div>
           <span class="yt-time" id="ytTime">0:00 / 0:00</span>
           <button class="yt-btn" id="ytMark" title="Marcar ponto importante"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
           <button class="yt-btn txt cc" id="ytCC" title="Legenda">CC</button>
@@ -2483,6 +2515,16 @@ document.addEventListener('click',e=>{ if(document.body.classList.contains('menu
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.body.classList.remove('menu-open');
   if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('.aula-card,.trilha-card')){ e.preventDefault(); e.target.click(); }
+});
+document.addEventListener('keydown',e=>{
+  if(currentView()!=='aula' || !_cpPlayer) return;
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'||e.target.isContentEditable) return;
+  if(e.key==='ArrowLeft'){ e.preventDefault(); seekBy(-5); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); seekBy(5); }
+  else if(e.key===' '||e.key==='k'){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='j'){ e.preventDefault(); seekBy(-10); }
+  else if(e.key==='l'){ e.preventDefault(); seekBy(10); }
 });
 document.getElementById('backBtn').addEventListener('click', goBack);
 document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('empSwitch').classList.toggle('open'); });
