@@ -471,6 +471,20 @@
   .lnk-gen svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
   .lnk-gen:hover{text-decoration:underline}
 
+  /* ===== trilhas liberadas por empresa ===== */
+  .et-head{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:2px}
+  .et-switch{display:inline-flex; align-items:center; gap:9px; cursor:pointer; user-select:none; font-size:12.5px; font-weight:700; color:var(--g300)}
+  .et-switch input{display:none}
+  .et-slider{width:38px; height:22px; border-radius:99px; background:var(--navy-soft); position:relative; transition:background .18s; flex-shrink:0}
+  .et-slider::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .18s}
+  .et-switch input:checked + .et-slider{background:var(--cyan)}
+  .et-switch input:checked + .et-slider::after{transform:translateX(16px)}
+  .et-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; transition:opacity .18s}
+  .et-item{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--line); border-radius:10px; background:var(--navy-deep); cursor:pointer; font-size:13px; font-weight:600; color:var(--g100); transition:border-color .15s}
+  .et-item:has(input:checked){border-color:var(--cyan); background:var(--cyan-soft)}
+  .et-item input{width:17px; height:17px; accent-color:var(--cyan); cursor:pointer}
+  .et-item input:disabled{cursor:default}
+
   /* ===== polish global ===== */
   ::-webkit-scrollbar{width:10px; height:10px}
   ::-webkit-scrollbar-track{background:transparent}
@@ -1776,7 +1790,9 @@ function renderTrilhas(){
   const all=DB.aulas(); const done=Prog.done();
   const covers=COVERS_CACHE;
   const admin=Auth.isAdmin();
-  wrap.innerHTML = TRILHAS.map(t=>{
+  const vis=TRILHAS.filter(t=>trilhaVisivel(t.id));
+  if(!vis.length){ wrap.innerHTML='<div class="empty" style="grid-column:1/-1"><h4>Nenhuma trilha liberada ainda</h4><p>Fale com a Prisma para liberar seu conteúdo.</p></div>'; return; }
+  wrap.innerHTML = vis.map(t=>{
     const list=t.aulas.map(id=>all.find(a=>a.id===id)).filter(Boolean);
     const total=list.length||1; const dc=list.filter(a=>done.has(a.id)).length;
     const pct=Math.round(dc/total*100);
@@ -1806,6 +1822,7 @@ function setAulasHead(t){
 }
 function openTrilha(id){
   const t=TRILHAS.find(x=>x.id===id); if(!t) return;
+  if(!trilhaVisivel(id)){ toast('Trilha não liberada para você'); return; }
   trilhaSet=new Set(t.aulas);
   currentFilter='all';
   document.querySelectorAll('#aulaFilters .fbtn').forEach(x=>x.classList.remove('on'));
@@ -1818,7 +1835,7 @@ function openTrilha(id){
 function renderTrilhaChips(){
   const box=document.getElementById('trilhaFilters'); if(!box) return;
   box.innerHTML = `<button class="fbtn tchip on" data-trilha="">Todas as trilhas</button>` +
-    TRILHAS.map(t=>{ const label = t.id==='inicio' ? 'Comece por aqui' : t.nome; return `<button class="fbtn tchip" data-trilha="${t.id}">${label}</button>`; }).join('');
+    TRILHAS.filter(t=>trilhaVisivel(t.id)).map(t=>{ const label = t.id==='inicio' ? 'Comece por aqui' : t.nome; return `<button class="fbtn tchip" data-trilha="${t.id}">${label}</button>`; }).join('');
 }
 function setActiveTrilhaChip(id){
   document.querySelectorAll('#trilhaFilters .tchip').forEach(c=>c.classList.toggle('on', c.dataset.trilha===(id||'')));
@@ -1846,6 +1863,7 @@ function renderAulas(filter='all', q=''){
   const AULAS = DB.aulas();
   const done = Prog.done();
   const passa = a=>{
+    if(!aulaVisivel(a)) return false;
     if(trilhaSet && !trilhaSet.has(a.id)) return false;
     if(filter==='disponivel'&&a.st!=='disponivel') return false;
     if(filter==='producao'&&a.st!=='producao') return false;
@@ -2025,7 +2043,7 @@ function renderScripts(q=''){
 /* ---------- dashboard ---------- */
 function refreshProgress(){
   const AULAS = DB.aulas();
-  const disponiveis = AULAS.filter(a=>a.st==='disponivel');
+  const disponiveis = AULAS.filter(a=>a.st==='disponivel' && aulaVisivel(a));
   const total = disponiveis.length || 1;
   const done = Prog.done();
   const doneCount = disponiveis.filter(a=>done.has(a.id)).length;
@@ -2206,16 +2224,49 @@ function collectMats(){
 const EMP = { all(){ return EMP_CACHE; } };
 async function loadEmpresas(){
   try{
-    const { data:emps } = await sb.from('empresas').select('id,nome').order('nome');
+    // tenta com a coluna trilhas_restrito; se não existir ainda, cai pro básico
+    let r = await sb.from('empresas').select('id,nome,trilhas_restrito').order('nome');
+    if(r.error) r = await sb.from('empresas').select('id,nome').order('nome');
+    const emps = r.data;
     const { data:mem } = await sb.from('empresa_membros').select('id,empresa_id,papel,user_id');
     const ids=[...new Set((mem||[]).map(m=>m.user_id))];
     let pm={};
     if(ids.length){ const { data:profs } = await sb.from('profiles').select('id,nome,email').in('id', ids); (profs||[]).forEach(p=>{ pm[p.id]=p; }); }
     const byEmp={};
     (mem||[]).forEach(m=>{ const p=pm[m.user_id]||{}; (byEmp[m.empresa_id]=byEmp[m.empresa_id]||[]).push({ id:m.id, user_id:m.user_id, role:m.papel, nome:p.nome||p.email||'—', email:p.email||'' }); });
-    EMP_CACHE = (emps||[]).map(e=>({ id:e.id, nome:e.nome, membros: byEmp[e.id]||[] }));
+    // trilhas liberadas por empresa (tabela empresa_trilhas; fallback localStorage)
+    let liber={}, fromDB=true;
+    const et = await sb.from('empresa_trilhas').select('empresa_id,trilha_id');
+    if(et.error){ fromDB=false; } else { (et.data||[]).forEach(x=>{ (liber[x.empresa_id]=liber[x.empresa_id]||[]).push(x.trilha_id); }); }
+    const lsCfg = LS.get('cp_emptrilhas', {});
+    EMP_CACHE = (emps||[]).map(e=>{
+      const ls = lsCfg[e.id] || {};
+      const restrito = (typeof e.trilhas_restrito==='boolean') ? e.trilhas_restrito : !!ls.restrito;
+      const allowed = fromDB ? (liber[e.id]||[]) : (ls.allowed||[]);
+      return { id:e.id, nome:e.nome, membros: byEmp[e.id]||[], trilhas_restrito:restrito, trilhas_liberadas:allowed };
+    });
   }catch(e){ EMP_CACHE=[]; }
 }
+async function saveEmpresaTrilhas(empId, restrito, allowedIds){
+  let dbOK=true;
+  try{
+    const r1 = await sb.from('empresas').update({ trilhas_restrito:restrito }).eq('id',empId); if(r1.error) throw r1.error;
+    const r2 = await sb.from('empresa_trilhas').delete().eq('empresa_id',empId); if(r2.error) throw r2.error;
+    if(allowedIds.length){ const r3 = await sb.from('empresa_trilhas').insert(allowedIds.map(t=>({empresa_id:empId, trilha_id:t}))); if(r3.error) throw r3.error; }
+  }catch(e){ dbOK=false; }
+  const ls=LS.get('cp_emptrilhas', {}); ls[empId]={restrito, allowed:allowedIds.slice()}; LS.set('cp_emptrilhas', ls);
+  const e=EMP_CACHE.find(x=>x.id===empId); if(e){ e.trilhas_restrito=restrito; e.trilhas_liberadas=allowedIds.slice(); }
+  return dbOK;
+}
+/* visibilidade de trilhas por empresa (admin vê tudo) */
+function trilhasVisiveis(){
+  if(Auth.isAdmin()) return null; // null = todas
+  const e = EMP_CACHE.find(x=>x.id===activeEmpresa) || EMP_CACHE[0];
+  if(!e || !e.trilhas_restrito) return null;
+  return new Set(e.trilhas_liberadas||[]);
+}
+function trilhaVisivel(id){ const v=trilhasVisiveis(); return !v || v.has(id); }
+function aulaVisivel(a){ const v=trilhasVisiveis(); if(!v) return true; const tid=AULA_TRILHA[a.id]; return !!(tid && v.has(tid)); }
 async function createMember(empresaId, nome, email, papel, senha){
   try{
     const sb2 = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth:{ persistSession:false, storageKey:'cp-signup', autoRefreshToken:false } });
@@ -2316,8 +2367,33 @@ function renderEmpresas(){
               <div class="al-act"><button class="icon-btn ok" data-invite="${m.id}" title="Copiar convite"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button><button class="icon-btn del" data-rm="${m.id}" title="Remover acesso"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
             </div>`).join('') || '<div class="empty"><h4>Sem membros ainda</h4><p>Adicione o primeiro acesso ao lado.</p></div>'}</div>
         </div>
+      </div>
+      <div class="side-card" id="empTrilhasCard" style="margin-top:18px">
+        <div class="et-head">
+          <div class="sc-k" style="margin:0">Trilhas liberadas · ${e.nome}</div>
+          <label class="et-switch"><input type="checkbox" id="etRestrito" ${e.trilhas_restrito?'checked':''}><span class="et-slider"></span><span class="et-txt">${e.trilhas_restrito?'Liberar só as marcadas':'Vê todas as trilhas'}</span></label>
+        </div>
+        <div class="hint" style="margin:2px 0 14px">Desligado = o cliente vê <b>todas</b> as trilhas. Ligado = vê <b>só as que você marcar</b> abaixo (o resto fica exclusivo pra quem você liberar).</div>
+        <div class="et-grid" id="etGrid">${TRILHAS.map(t=>`<label class="et-item"><input type="checkbox" data-et="${t.id}" ${e.trilhas_liberadas.includes(t.id)?'checked':''} ${e.trilhas_restrito?'':'disabled'}><span>${(t.sup+' '+t.nome).trim()}</span></label>`).join('')}</div>
+        <button class="btn green" id="etSave" style="margin-top:14px;width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar liberações</button>
       </div>`;
     document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
+    // trilhas liberadas por empresa
+    (function(){
+      const sw=document.getElementById('etRestrito'), grid=document.getElementById('etGrid'), save=document.getElementById('etSave');
+      if(!sw) return;
+      const sync=()=>{ const on=sw.checked; grid.querySelectorAll('input[data-et]').forEach(c=>c.disabled=!on); grid.style.opacity=on?'1':'.5'; const tx=sw.parentElement.querySelector('.et-txt'); if(tx) tx.textContent=on?'Liberar só as marcadas':'Vê todas as trilhas'; };
+      sw.onchange=sync; sync();
+      save.onclick=async ()=>{
+        const restrito=sw.checked;
+        const allowed=[...grid.querySelectorAll('input[data-et]:checked')].map(c=>c.dataset.et);
+        if(restrito && !allowed.length){ toast('Marque ao menos 1 trilha (ou desligue a restrição)'); return; }
+        save.disabled=true; save.textContent='Salvando…';
+        const ok=await saveEmpresaTrilhas(empresaSel, restrito, allowed);
+        toast(ok?'Trilhas liberadas salvas ✓':'Salvo localmente (rode o SQL p/ valer pro cliente)');
+        save.disabled=false; renderEmpresas();
+      };
+    })();
     // senha automática a partir do e-mail (fica editável; para de auto-preencher se você digitar na senha)
     (function(){
       const mfEmail=document.getElementById('mfEmail'), mfSenha=document.getElementById('mfSenha'), mfGen=document.getElementById('mfGen');

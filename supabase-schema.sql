@@ -300,5 +300,26 @@ create policy jornada_write_membro on public.jornada for all to authenticated
   with check ( public.is_empresa_member(empresa_id) and step_key in ('treino-wpp','scripts','acompanha') );
 
 -- =====================================================================
+-- TRILHAS LIBERADAS POR EMPRESA (controle de acesso por cliente)
+-- Sem isto, o app funciona só no navegador do admin (não aplica p/ cliente).
+-- =====================================================================
+alter table public.empresas add column if not exists trilhas_restrito boolean not null default false;
+
+create table if not exists public.empresa_trilhas (
+  empresa_id uuid not null references public.empresas(id) on delete cascade,
+  trilha_id  text not null references public.trilhas(id) on delete cascade,
+  primary key (empresa_id, trilha_id)
+);
+alter table public.empresa_trilhas enable row level security;
+
+drop policy if exists empresa_trilhas_select on public.empresa_trilhas;
+create policy empresa_trilhas_select on public.empresa_trilhas for select to authenticated
+  using ( public.is_admin() or public.is_empresa_member(empresa_id) );
+
+drop policy if exists empresa_trilhas_admin on public.empresa_trilhas;
+create policy empresa_trilhas_admin on public.empresa_trilhas for all to authenticated
+  using ( public.is_admin() ) with check ( public.is_admin() );
+
+-- =====================================================================
 -- FIM.
 -- =====================================================================
