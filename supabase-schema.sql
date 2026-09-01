@@ -301,10 +301,10 @@ create policy jornada_write_membro on public.jornada for all to authenticated
 
 -- =====================================================================
 -- TRILHAS LIBERADAS POR EMPRESA (controle de acesso por cliente)
--- Sem isto, o app funciona só no navegador do admin (não aplica p/ cliente).
+-- Sem linhas para uma empresa = ela vê TODAS as trilhas (padrão).
+-- Com linhas = vê SÓ as trilhas listadas. Sem isto rodado, funciona só
+-- no navegador do admin (não aplica p/ o cliente).
 -- =====================================================================
-alter table public.empresas add column if not exists trilhas_restrito boolean not null default false;
-
 create table if not exists public.empresa_trilhas (
   empresa_id uuid not null references public.empresas(id) on delete cascade,
   trilha_id  text not null references public.trilhas(id) on delete cascade,

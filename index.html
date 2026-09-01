@@ -471,19 +471,22 @@
   .lnk-gen svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
   .lnk-gen:hover{text-decoration:underline}
 
-  /* ===== trilhas liberadas por empresa ===== */
-  .et-head{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:2px}
-  .et-switch{display:inline-flex; align-items:center; gap:9px; cursor:pointer; user-select:none; font-size:12.5px; font-weight:700; color:var(--g300)}
-  .et-switch input{display:none}
-  .et-slider{width:38px; height:22px; border-radius:99px; background:var(--navy-soft); position:relative; transition:background .18s; flex-shrink:0}
-  .et-slider::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .18s}
-  .et-switch input:checked + .et-slider{background:var(--cyan)}
-  .et-switch input:checked + .et-slider::after{transform:translateX(16px)}
-  .et-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; transition:opacity .18s}
-  .et-item{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--line); border-radius:10px; background:var(--navy-deep); cursor:pointer; font-size:13px; font-weight:600; color:var(--g100); transition:border-color .15s}
-  .et-item:has(input:checked){border-color:var(--cyan); background:var(--cyan-soft)}
-  .et-item input{width:17px; height:17px; accent-color:var(--cyan); cursor:pointer}
-  .et-item input:disabled{cursor:default}
+  /* ===== acesso às trilhas por empresa ===== */
+  .et-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px}
+  .et-actions{flex-shrink:0}
+  .et-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .et-item{display:flex; align-items:center; gap:11px; padding:13px 14px; border:1px solid var(--line); border-radius:12px; background:var(--navy-deep); cursor:pointer; text-align:left; font-family:inherit; transition:all .15s; position:relative}
+  .et-item:hover{border-color:var(--g500)}
+  .et-item .et-check{width:22px; height:22px; border-radius:7px; border:1.5px solid var(--g500); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s}
+  .et-item .et-check svg{width:14px; height:14px; stroke:#fff; stroke-width:3; fill:none; opacity:0; transition:opacity .15s}
+  .et-item .et-name{flex:1; font-size:13px; font-weight:700; color:var(--g100); line-height:1.2}
+  .et-item .et-state{font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--g500)}
+  .et-item.on{border-color:var(--cyan); background:var(--cyan-soft)}
+  .et-item.on .et-check{background:var(--cyan); border-color:var(--cyan)}
+  .et-item.on .et-check svg{opacity:1}
+  .et-item.on .et-state{color:var(--cyan)}
+  .et-foot{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:14px}
+  .et-count{font-size:12.5px; font-weight:700; color:var(--g300)}
 
   /* ===== polish global ===== */
   ::-webkit-scrollbar{width:10px; height:10px}
@@ -2224,46 +2227,37 @@ function collectMats(){
 const EMP = { all(){ return EMP_CACHE; } };
 async function loadEmpresas(){
   try{
-    // tenta com a coluna trilhas_restrito; se não existir ainda, cai pro básico
-    let r = await sb.from('empresas').select('id,nome,trilhas_restrito').order('nome');
-    if(r.error) r = await sb.from('empresas').select('id,nome').order('nome');
-    const emps = r.data;
+    const { data:emps } = await sb.from('empresas').select('id,nome').order('nome');
     const { data:mem } = await sb.from('empresa_membros').select('id,empresa_id,papel,user_id');
     const ids=[...new Set((mem||[]).map(m=>m.user_id))];
     let pm={};
     if(ids.length){ const { data:profs } = await sb.from('profiles').select('id,nome,email').in('id', ids); (profs||[]).forEach(p=>{ pm[p.id]=p; }); }
     const byEmp={};
     (mem||[]).forEach(m=>{ const p=pm[m.user_id]||{}; (byEmp[m.empresa_id]=byEmp[m.empresa_id]||[]).push({ id:m.id, user_id:m.user_id, role:m.papel, nome:p.nome||p.email||'—', email:p.email||'' }); });
-    // trilhas liberadas por empresa (tabela empresa_trilhas; fallback localStorage)
-    let liber={}, fromDB=true;
+    // trilhas liberadas por empresa — 1 tabela só (empresa_trilhas). SEM linhas = vê todas.
+    let liber={};
     const et = await sb.from('empresa_trilhas').select('empresa_id,trilha_id');
-    if(et.error){ fromDB=false; } else { (et.data||[]).forEach(x=>{ (liber[x.empresa_id]=liber[x.empresa_id]||[]).push(x.trilha_id); }); }
-    const lsCfg = LS.get('cp_emptrilhas', {});
-    EMP_CACHE = (emps||[]).map(e=>{
-      const ls = lsCfg[e.id] || {};
-      const restrito = (typeof e.trilhas_restrito==='boolean') ? e.trilhas_restrito : !!ls.restrito;
-      const allowed = fromDB ? (liber[e.id]||[]) : (ls.allowed||[]);
-      return { id:e.id, nome:e.nome, membros: byEmp[e.id]||[], trilhas_restrito:restrito, trilhas_liberadas:allowed };
-    });
+    if(et.error){ liber = LS.get('cp_emptrilhas', {}); }           // fallback: {empId:[ids]}
+    else { (et.data||[]).forEach(x=>{ (liber[x.empresa_id]=liber[x.empresa_id]||[]).push(x.trilha_id); }); }
+    EMP_CACHE = (emps||[]).map(e=>({ id:e.id, nome:e.nome, membros: byEmp[e.id]||[], trilhas_liberadas: liber[e.id]||[] }));
   }catch(e){ EMP_CACHE=[]; }
 }
-async function saveEmpresaTrilhas(empId, restrito, allowedIds){
-  let dbOK=true;
+async function saveEmpresaTrilhas(empId, allowedIds){
+  // instantâneo (cache + localStorage) — a UI nunca trava esperando o banco
+  const ls=LS.get('cp_emptrilhas', {}); ls[empId]=allowedIds.slice(); LS.set('cp_emptrilhas', ls);
+  const e=EMP_CACHE.find(x=>x.id===empId); if(e){ e.trilhas_liberadas=allowedIds.slice(); }
   try{
-    const r1 = await sb.from('empresas').update({ trilhas_restrito:restrito }).eq('id',empId); if(r1.error) throw r1.error;
-    const r2 = await sb.from('empresa_trilhas').delete().eq('empresa_id',empId); if(r2.error) throw r2.error;
-    if(allowedIds.length){ const r3 = await sb.from('empresa_trilhas').insert(allowedIds.map(t=>({empresa_id:empId, trilha_id:t}))); if(r3.error) throw r3.error; }
-  }catch(e){ dbOK=false; }
-  const ls=LS.get('cp_emptrilhas', {}); ls[empId]={restrito, allowed:allowedIds.slice()}; LS.set('cp_emptrilhas', ls);
-  const e=EMP_CACHE.find(x=>x.id===empId); if(e){ e.trilhas_restrito=restrito; e.trilhas_liberadas=allowedIds.slice(); }
-  return dbOK;
+    const del = await sb.from('empresa_trilhas').delete().eq('empresa_id',empId); if(del.error) throw del.error;
+    if(allowedIds.length){ const ins = await sb.from('empresa_trilhas').insert(allowedIds.map(t=>({empresa_id:empId, trilha_id:t}))); if(ins.error) throw ins.error; }
+    return true;
+  }catch(err){ return false; }
 }
-/* visibilidade de trilhas por empresa (admin vê tudo) */
+/* visibilidade de trilhas por empresa (admin vê tudo; sem liberação = vê todas) */
 function trilhasVisiveis(){
   if(Auth.isAdmin()) return null; // null = todas
   const e = EMP_CACHE.find(x=>x.id===activeEmpresa) || EMP_CACHE[0];
-  if(!e || !e.trilhas_restrito) return null;
-  return new Set(e.trilhas_liberadas||[]);
+  const lib = e && e.trilhas_liberadas || [];
+  return lib.length ? new Set(lib) : null;
 }
 function trilhaVisivel(id){ const v=trilhasVisiveis(); return !v || v.has(id); }
 function aulaVisivel(a){ const v=trilhasVisiveis(); if(!v) return true; const tid=AULA_TRILHA[a.id]; return !!(tid && v.has(tid)); }
@@ -2370,29 +2364,35 @@ function renderEmpresas(){
       </div>
       <div class="side-card" id="empTrilhasCard" style="margin-top:18px">
         <div class="et-head">
-          <div class="sc-k" style="margin:0">Trilhas liberadas · ${e.nome}</div>
-          <label class="et-switch"><input type="checkbox" id="etRestrito" ${e.trilhas_restrito?'checked':''}><span class="et-slider"></span><span class="et-txt">${e.trilhas_restrito?'Liberar só as marcadas':'Vê todas as trilhas'}</span></label>
+          <div><div class="sc-k" style="margin:0">Acesso às trilhas</div><div class="hint" style="margin-top:4px">Toque pra <b>liberar</b> ou <b>bloquear</b> cada trilha para <b>${e.nome}</b>. Vale pra todos os logins dessa empresa (inclusive os que já existem).</div></div>
+          <div class="et-actions"><button type="button" class="lnk-gen" id="etAll">Liberar todas</button></div>
         </div>
-        <div class="hint" style="margin:2px 0 14px">Desligado = o cliente vê <b>todas</b> as trilhas. Ligado = vê <b>só as que você marcar</b> abaixo (o resto fica exclusivo pra quem você liberar).</div>
-        <div class="et-grid" id="etGrid">${TRILHAS.map(t=>`<label class="et-item"><input type="checkbox" data-et="${t.id}" ${e.trilhas_liberadas.includes(t.id)?'checked':''} ${e.trilhas_restrito?'':'disabled'}><span>${(t.sup+' '+t.nome).trim()}</span></label>`).join('')}</div>
-        <button class="btn green" id="etSave" style="margin-top:14px;width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar liberações</button>
+        <div class="et-grid" id="etGrid">${TRILHAS.map(t=>{ const on = e.trilhas_liberadas.length===0 || e.trilhas_liberadas.includes(t.id); return `<button type="button" class="et-item ${on?'on':''}" data-et="${t.id}" aria-pressed="${on}"><span class="et-check"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="et-name">${(t.sup+' '+t.nome).trim()}</span><span class="et-state">${on?'Liberada':'Bloqueada'}</span></button>`; }).join('')}</div>
+        <div class="et-foot"><span id="etCount" class="et-count"></span><button class="btn green" id="etSave"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar</button></div>
       </div>`;
     document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
-    // trilhas liberadas por empresa
+    // acesso às trilhas por empresa (toggle em cada card; tudo liberado = vê todas)
     (function(){
-      const sw=document.getElementById('etRestrito'), grid=document.getElementById('etGrid'), save=document.getElementById('etSave');
-      if(!sw) return;
-      const sync=()=>{ const on=sw.checked; grid.querySelectorAll('input[data-et]').forEach(c=>c.disabled=!on); grid.style.opacity=on?'1':'.5'; const tx=sw.parentElement.querySelector('.et-txt'); if(tx) tx.textContent=on?'Liberar só as marcadas':'Vê todas as trilhas'; };
-      sw.onchange=sync; sync();
-      save.onclick=async ()=>{
-        const restrito=sw.checked;
-        const allowed=[...grid.querySelectorAll('input[data-et]:checked')].map(c=>c.dataset.et);
-        if(restrito && !allowed.length){ toast('Marque ao menos 1 trilha (ou desligue a restrição)'); return; }
-        save.disabled=true; save.textContent='Salvando…';
-        const ok=await saveEmpresaTrilhas(empresaSel, restrito, allowed);
-        toast(ok?'Trilhas liberadas salvas ✓':'Salvo localmente (rode o SQL p/ valer pro cliente)');
-        save.disabled=false; renderEmpresas();
+      const grid=document.getElementById('etGrid'), save=document.getElementById('etSave'), all=document.getElementById('etAll'), count=document.getElementById('etCount');
+      if(!grid) return;
+      const items=()=>[...grid.querySelectorAll('.et-item')];
+      const refresh=()=>{
+        const on=items().filter(b=>b.classList.contains('on')).length, tot=items().length;
+        count.textContent = on===tot ? 'Vê todas as '+tot+' trilhas' : on+' de '+tot+' liberadas';
+        all.textContent = on===tot ? 'Bloquear todas' : 'Liberar todas';
       };
+      items().forEach(b=> b.onclick=()=>{ const on=!b.classList.contains('on'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); b.querySelector('.et-state').textContent=on?'Liberada':'Bloqueada'; refresh(); });
+      all.onclick=()=>{ const tot=items().length, on=items().filter(b=>b.classList.contains('on')).length; const target=on!==tot; items().forEach(b=>{ b.classList.toggle('on',target); b.setAttribute('aria-pressed',target); b.querySelector('.et-state').textContent=target?'Liberada':'Bloqueada'; }); refresh(); };
+      save.onclick=async ()=>{
+        const checked=items().filter(b=>b.classList.contains('on')).map(b=>b.dataset.et);
+        if(!checked.length){ toast('Libere ao menos 1 trilha (ou o cliente não veria nada)'); return; }
+        const allowed = checked.length===items().length ? [] : checked;  // todas = vê todas (sem restrição)
+        save.disabled=true; save.textContent='Salvando…';
+        const ok=await saveEmpresaTrilhas(empresaSel, allowed);
+        save.disabled=false; save.innerHTML='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar';
+        toast(ok ? 'Acesso salvo ✓' : 'Salvo aqui — rode o SQL p/ valer pro cliente');
+      };
+      refresh();
     })();
     // senha automática a partir do e-mail (fica editável; para de auto-preencher se você digitar na senha)
     (function(){
