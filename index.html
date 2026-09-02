@@ -2,8 +2,17 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Central Prisma — Implantação do Método</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B0A0D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Central Prisma">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<script>if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://anpfvjbjefsmkqratoeg.supabase.co">
@@ -221,6 +230,14 @@
   }
   .logout-btn:hover{border-color:var(--red); color:var(--red)}
   .logout-btn svg{width:13px; height:13px; stroke:currentColor; stroke-width:2; fill:none}
+  .install-btn{
+    width:100%; margin-top:10px; padding:10px; border-radius:9px; cursor:pointer;
+    background:var(--cyan-soft); border:1px solid rgba(255,77,109,.4); color:var(--cyan);
+    font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:all .15s;
+  }
+  .install-btn:hover{background:rgba(255,77,109,.18); border-color:var(--cyan)}
+  .install-btn svg{width:14px; height:14px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
 
   /* ============ MAIN ============ */
   .content{min-width:0; display:flex; flex-direction:column}
@@ -487,6 +504,63 @@
   .et-item.on .et-state{color:var(--cyan)}
   .et-foot{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:14px}
   .et-count{font-size:12.5px; font-weight:700; color:var(--g300)}
+
+  /* ===== certificado ===== */
+  .btn.cert-cta{background:linear-gradient(135deg, rgba(255,77,109,.18), rgba(255,77,109,.06)); border:1px solid rgba(255,77,109,.45); color:var(--cyan)}
+  .btn.cert-cta:hover{background:rgba(255,77,109,.24); border-color:var(--cyan)}
+  .cert-modal{display:none; position:fixed; inset:0; z-index:220; background:rgba(11,10,13,.9); backdrop-filter:blur(6px); padding:24px; align-items:center; justify-content:center}
+  .cert-modal.on{display:flex}
+  .cert-box{max-width:900px; width:100%; display:flex; flex-direction:column; gap:16px; align-items:center}
+  .cert-box img{width:100%; height:auto; border-radius:12px; border:1px solid var(--line); box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .cert-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+  .tc-done{position:absolute; top:16px; left:16px; z-index:2; display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#0B0A0D; background:var(--green-light); padding:5px 10px; border-radius:99px}
+
+  /* ===== avisos (sino) ===== */
+  .bell-wrap{position:relative}
+  .bell-btn{position:relative; width:38px; height:38px; border-radius:10px; background:var(--navy-deep); border:1px solid var(--line); color:var(--g300); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s}
+  .bell-btn:hover{border-color:var(--cyan); color:var(--cyan)}
+  .bell-btn svg{width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round}
+  .bell-dot{position:absolute; top:-4px; right:-4px; min-width:17px; height:17px; padding:0 4px; border-radius:99px; background:var(--cyan); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid var(--bg)}
+  .bell-menu{display:none; position:absolute; right:0; top:100%; margin-top:8px; z-index:80; width:340px; max-width:86vw; max-height:70vh; overflow-y:auto; background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.6); padding:6px}
+  .bell-menu.open{display:block}
+  .bell-menu .bm-head{font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--g500); padding:10px 12px 6px}
+  .bell-compose{padding:10px 12px; border-bottom:1px solid var(--line); margin-bottom:6px}
+  .bell-compose input, .bell-compose textarea{width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--g100); font-family:inherit; font-size:13px; padding:9px 10px; margin-bottom:7px}
+  .bell-compose textarea{resize:vertical; min-height:52px; line-height:1.4}
+  .bell-compose input:focus, .bell-compose textarea:focus{outline:none; border-color:var(--cyan)}
+  .aviso-item{padding:11px 12px; border-radius:10px; transition:background .15s}
+  .aviso-item:hover{background:rgba(255,255,255,.03)}
+  .aviso-item + .aviso-item{border-top:1px solid var(--line)}
+  .aviso-item.novo{background:var(--cyan-soft)}
+  .aviso-item .av-t{font-size:13.5px; font-weight:800; color:var(--g100); display:flex; align-items:center; gap:7px}
+  .aviso-item .av-x{font-size:13px; color:var(--g500); margin-top:4px; line-height:1.5; white-space:pre-wrap}
+  .aviso-item .av-when{font-family:var(--mono); font-size:9px; letter-spacing:.5px; color:var(--g500); margin-top:6px; text-transform:uppercase}
+  .aviso-item .av-del{float:right; color:var(--g500); cursor:pointer; font-size:15px; line-height:1}
+  .aviso-item .av-del:hover{color:var(--red)}
+  .bell-empty{padding:22px 14px; text-align:center; color:var(--g500); font-size:12.5px}
+
+  /* ===== notas + dúvidas por aula ===== */
+  .notas-status{font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.5px; color:var(--green-light); text-transform:none; margin-left:8px}
+  .notas-ta{width:100%; min-height:96px; resize:vertical; background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--g100); font-family:inherit; font-size:13px; line-height:1.5; padding:11px 12px; margin-top:4px}
+  .notas-ta:focus{outline:none; border-color:var(--cyan)}
+  .duvidas-list{display:flex; flex-direction:column; gap:10px; margin-bottom:12px}
+  .duvida-empty{font-size:12.5px; color:var(--g500); padding:6px 0 10px}
+  .duvida{background:var(--bg); border:1px solid var(--line); border-radius:11px; padding:11px 13px}
+  .duvida .dv-q{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .duvida .dv-nome{font-size:12px; font-weight:800; color:var(--g100)}
+  .duvida .dv-when{font-family:var(--mono); font-size:9px; color:var(--g500); text-transform:uppercase}
+  .duvida .dv-txt{font-size:13px; color:var(--g300); margin-top:5px; line-height:1.5; white-space:pre-wrap}
+  .duvida .dv-resp{margin-top:9px; padding:9px 11px; border-radius:9px; background:var(--cyan-soft); border:1px solid rgba(255,77,109,.25); font-size:13px; color:var(--g100); line-height:1.5; white-space:pre-wrap}
+  .duvida .dv-resp-k{display:block; font-family:var(--mono); font-size:8.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--cyan); margin-bottom:4px}
+  .duvida .dv-wait{margin-top:8px; font-family:var(--mono); font-size:9.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--amber)}
+  .dv-answer{margin-top:9px; display:flex; flex-direction:column; gap:7px}
+  .dv-answer textarea{width:100%; min-height:52px; resize:vertical; background:var(--navy); border:1px solid var(--line); border-radius:8px; color:var(--g100); font-family:inherit; font-size:12.5px; padding:8px 10px}
+  .dv-answer textarea:focus{outline:none; border-color:var(--cyan)}
+  .dv-send{align-self:flex-start; padding:7px 14px; font-size:12px}
+  .duvida-form{display:flex; flex-direction:column; gap:8px}
+  .duvida-form textarea{width:100%; min-height:60px; resize:vertical; background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--g100); font-family:inherit; font-size:13px; line-height:1.5; padding:10px 12px}
+  .duvida-form textarea:focus{outline:none; border-color:var(--cyan)}
+  .duvida-form .btn{align-self:flex-start}
 
   /* ===== polish global ===== */
   ::-webkit-scrollbar{width:10px; height:10px}
@@ -960,7 +1034,7 @@
     <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/></svg>
     Empresas e acessos
   </button>
-  <button class="nav-item nav-admin admin-only" data-view="metricas" style="display:none">
+  <button class="nav-item nav-admin admin-only" id="navMetricas" data-view="metricas" style="display:none">
     <svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg>
     Métricas
   </button>
@@ -973,6 +1047,10 @@
         <div class="u-role" id="sideRole">Cliente</div>
       </div>
     </div>
+    <button class="install-btn" id="installBtn" style="display:none">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+      Instalar app no celular
+    </button>
     <button class="logout-btn" id="logoutBtn">
       <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
       Sair
@@ -993,6 +1071,10 @@
     <div class="top-status">
       <div class="status-chip"><span class="pulse"></span><span>Implantação ativa</span></div>
       <div class="prog-mini" title="Sua jornada de implantação"><div class="bar"><div class="fill" id="topFill"></div></div><span class="n" id="topPct">0%</span><span class="pl-lbl">concluído</span></div>
+      <div class="bell-wrap" id="bellWrap">
+        <button class="bell-btn" id="bellBtn" title="Avisos" aria-label="Avisos"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bell-dot" id="bellDot" style="display:none"></span></button>
+        <div class="bell-menu" id="bellMenu"></div>
+      </div>
       <div class="avatar" id="topAv">F</div>
     </div>
   </header>
@@ -1042,6 +1124,7 @@
       <div class="crumb" id="aulasCrumb">Biblioteca</div>
       <h1 id="aulasTitle">Aulas</h1>
       <div class="sub" id="aulasSub">Conteúdo direto, sem enrolação. Cada aula termina em aplicação — assista e execute na mesma semana.</div>
+      <button class="btn cert-cta" id="certBtn" style="display:none;margin-top:14px"><svg viewBox="0 0 24 24"><path d="M12 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/><path d="m8.5 13.5-1.5 7 5-3 5 3-1.5-7"/></svg>Baixar certificado desta trilha</button>
     </div>
     <div class="filters tchips" id="trilhaFilters"></div>
     <div class="filters" id="aulaFilters">
@@ -1579,6 +1662,7 @@ const Auth = {
   },
   async logout(){ try{ await sb.auth.signOut(); }catch(e){} this.user=null; },
   isAdmin(){ return this.user && this.user.role==='admin'; },
+  isGestor(){ if(!this.user) return false; return (window.EMP_CACHE||[]).some(e=>(e.membros||[]).some(m=>m.user_id===this.user.id && m.role==='gestor')); },
 };
 
 /* =====================================================================
@@ -1804,7 +1888,7 @@ function renderTrilhas(){
     return `<div class="trilha-card" data-trilha="${t.id}" tabindex="0" role="button" aria-label="${(t.sup+' '+t.nome).trim()}">
       <div class="tc-bg" style="background:${bg}"></div>
       <div class="tc-scrim"></div>
-      <div class="tc-count">${list.length} aula${list.length!==1?'s':''}</div>
+      ${pct===100?`<div class="tc-done"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#0B0A0D" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>Concluída</div>`:`<div class="tc-count">${list.length} aula${list.length!==1?'s':''}</div>`}
       ${cover?'':`<div class="tc-ic"><svg viewBox="0 0 24 24">${t.ic}</svg></div>`}
       <div class="tc-body">
         <div class="tc-sup">${t.sup}</div>
@@ -1822,6 +1906,36 @@ function setAulasHead(t){
   const c=document.getElementById('aulasCrumb'), h=document.getElementById('aulasTitle'), s=document.getElementById('aulasSub');
   if(t){ if(c)c.textContent='Trilha · '+t.nome; if(h)h.textContent=(t.sup+' '+t.nome).trim(); if(s)s.textContent=t.desc||''; }
   else { if(c)c.textContent='Biblioteca'; if(h)h.textContent='Aulas'; if(s)s.textContent='Conteúdo direto, sem enrolação. Cada aula termina em aplicação — assista e execute na mesma semana.'; }
+  const cb=document.getElementById('certBtn');
+  if(cb){ const ok = t && (t.aulas||[]).length>0 && trilhaPct(t)===100; cb.style.display = ok?'inline-flex':'none'; if(ok) cb.onclick=()=>abrirCertificado(t); }
+}
+function trilhaPct(t){ const done=Prog.done(); const list=(t.aulas||[]).map(id=>DB.aulas().find(a=>a.id===id)).filter(Boolean); const tot=list.length||1; return Math.round(list.filter(a=>done.has(a.id)).length/tot*100); }
+function abrirCertificado(t){
+  const nome=(Auth.user&&Auth.user.name)||'Aluno';
+  const dt=new Date(); const data=String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+  const c=document.createElement('canvas'); c.width=1600; c.height=1131; const x=c.getContext('2d');
+  x.fillStyle='#0B0A0D'; x.fillRect(0,0,1600,1131);
+  const g=x.createRadialGradient(800,250,60,800,250,950); g.addColorStop(0,'rgba(255,77,109,.18)'); g.addColorStop(1,'rgba(255,77,109,0)'); x.fillStyle=g; x.fillRect(0,0,1600,1131);
+  x.strokeStyle='rgba(255,77,109,.85)'; x.lineWidth=4; x.strokeRect(50,50,1500,1031);
+  x.strokeStyle='rgba(255,255,255,.14)'; x.lineWidth=1.5; x.strokeRect(70,70,1460,991);
+  x.textAlign='center';
+  x.fillStyle='#FF4D6D'; x.font='700 26px "JetBrains Mono", monospace'; x.fillText('C E N T R A L   P R I S M A', 800, 175);
+  x.strokeStyle='#FF4D6D'; x.lineWidth=7; x.beginPath(); x.moveTo(800,215); x.lineTo(756,300); x.lineTo(844,300); x.closePath(); x.stroke();
+  x.fillStyle='#F4F5F8'; x.font='800 66px Georgia, serif'; x.fillText('Certificado de Conclusão', 800, 440);
+  x.fillStyle='#8A93A8'; x.font='400 27px Georgia, serif'; x.fillText('Certificamos que', 800, 520);
+  x.fillStyle='#ffffff'; x.font='700 86px Georgia, serif'; x.fillText(nome, 800, 630);
+  const nw=Math.min(1100, x.measureText(nome).width+140); x.strokeStyle='rgba(255,255,255,.2)'; x.lineWidth=2; x.beginPath(); x.moveTo(800-nw/2,668); x.lineTo(800+nw/2,668); x.stroke();
+  x.fillStyle='#8A93A8'; x.font='400 27px Georgia, serif'; x.fillText('concluiu com êxito a trilha', 800, 740);
+  x.fillStyle='#FF4D6D'; x.font='800 54px Georgia, serif'; x.fillText((t.sup+' '+t.nome).trim().toUpperCase(), 800, 815);
+  x.fillStyle='#D4D8E1'; x.font='400 25px Georgia, serif'; x.fillText('Concluído em '+data, 800, 915);
+  x.fillStyle='#8A93A8'; x.font='700 16px "JetBrains Mono", monospace'; x.fillText('MÉTODO PRISMA · AQUISIÇÃO, CONVERSÃO E ACOMPANHAMENTO', 800, 1005);
+  const url=c.toDataURL('image/png');
+  let m=document.getElementById('certModal');
+  if(!m){ m=document.createElement('div'); m.id='certModal'; m.className='cert-modal'; document.body.appendChild(m); }
+  m.innerHTML='<div class="cert-box"><img src="'+url+'" alt="Certificado"><div class="cert-actions"><a class="btn green" href="'+url+'" download="certificado-'+t.id+'.png"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>Baixar PNG</a><button class="btn ghost" id="certClose">Fechar</button></div></div>';
+  m.classList.add('on');
+  m.onclick=(e)=>{ if(e.target===m) m.classList.remove('on'); };
+  document.getElementById('certClose').onclick=()=>m.classList.remove('on');
 }
 function openTrilha(id){
   const t=TRILHAS.find(x=>x.id===id); if(!t) return;
@@ -1988,6 +2102,8 @@ function openAula(id){
           <button class="btn ${isDone?'ghost':'green'}" id="btnConcluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>${isDone?'Concluída ✓':'Marcar como concluída'}</button>
           ${nextA?`<button class="btn cyan" id="btnNext" title="${nextA.t}">Próxima aula<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`:''}
         </div>
+        <div class="side-card notas-card"><div class="sc-k">📝 Minhas anotações <span class="notas-status" id="notasStatus"></span></div><textarea id="aulaNotas" class="notas-ta" placeholder="Anote os pontos-chave desta aula… salva sozinho e só você vê."></textarea></div>
+        <div class="side-card"><div class="sc-k">💬 Dúvidas sobre a aula</div><div id="duvidasList" class="duvidas-list"></div><div class="duvida-form"><textarea id="duvidaTxt" placeholder="Ficou com alguma dúvida? Escreva aqui que a Prisma responde."></textarea><button class="btn cyan" id="duvidaSend"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Enviar dúvida</button></div></div>
       </div>
       <aside>
         <div class="side-card"><div class="sc-k">Checklist da aula</div><ul class="chk">${chk.map((c,i)=>`<li data-ci="${i}" class="${chkDone.has(i)?'ok':''}"><span class="box"></span><span>${c}</span></li>`).join('')}</ul></div>
@@ -2011,6 +2127,14 @@ function openAula(id){
   };
   const nx1=document.getElementById('ytNext'); if(nx1) nx1.onclick=()=>openAula(nextId);
   const nx2=document.getElementById('btnNext'); if(nx2) nx2.onclick=()=>openAula(nextId);
+  // anotações pessoais (localStorage, privado)
+  const nkey='cp_notas_'+(Auth.user?Auth.user.id:'anon')+'_'+id;
+  const notasEl=document.getElementById('aulaNotas');
+  if(notasEl){ notasEl.value=LS.get(nkey,''); let nt; notasEl.addEventListener('input',()=>{ clearTimeout(nt); const st=document.getElementById('notasStatus'); if(st)st.textContent='salvando…'; nt=setTimeout(()=>{ LS.set(nkey, notasEl.value); if(st)st.textContent='✓ salvo'; },500); }); }
+  // dúvidas (banco; fallback local)
+  renderDuvidas(id);
+  const dSend=document.getElementById('duvidaSend');
+  if(dSend) dSend.onclick=async ()=>{ const el=document.getElementById('duvidaTxt'); const tx=(el.value||'').trim(); if(!tx){ toast('Escreva sua dúvida'); return; } dSend.disabled=true; dSend.textContent='Enviando…'; await postDuvida(id, tx); el.value=''; dSend.disabled=false; dSend.innerHTML='<svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Enviar dúvida'; toast('Dúvida enviada ✓'); renderDuvidas(id); };
   bindGoto();
   show('aula');
   if(vid){
@@ -2261,6 +2385,71 @@ function trilhasVisiveis(){
 }
 function trilhaVisivel(id){ const v=trilhasVisiveis(); return !v || v.has(id); }
 function aulaVisivel(a){ const v=trilhasVisiveis(); if(!v) return true; const tid=AULA_TRILHA[a.id]; return !!(tid && v.has(tid)); }
+
+/* ===== DÚVIDAS POR AULA ===== */
+async function loadDuvidas(aulaId){
+  try{ const { data, error } = await sb.from('duvidas').select('*').eq('aula_id',aulaId).order('created_at'); if(error) throw error; return data||[]; }
+  catch(e){ return LS.get('cp_duvidas_'+aulaId, []) || []; }
+}
+async function postDuvida(aulaId, texto){
+  const nome=(Auth.user&&Auth.user.name)||'Cliente';
+  try{ const { data, error } = await sb.from('duvidas').insert({ aula_id:aulaId, user_id:Auth.user.id, nome, texto }).select().single(); if(error) throw error; return data; }
+  catch(e){ const local={ id:'ls-'+Date.now(), aula_id:aulaId, user_id:(Auth.user&&Auth.user.id), nome, texto, resposta:null, created_at:new Date().toISOString() }; const arr=LS.get('cp_duvidas_'+aulaId,[]); arr.push(local); LS.set('cp_duvidas_'+aulaId, arr); return local; }
+}
+async function answerDuvida(aulaId, id, resposta){
+  try{ if(!String(id).startsWith('ls-')){ const { error }=await sb.from('duvidas').update({ resposta, answered_at:new Date().toISOString() }).eq('id',id); if(error) throw error; } else throw 0; }
+  catch(e){ const arr=LS.get('cp_duvidas_'+aulaId,[]); const d=arr.find(x=>x.id===id); if(d){ d.resposta=resposta; LS.set('cp_duvidas_'+aulaId,arr); } }
+}
+async function renderDuvidas(aulaId){
+  const box=document.getElementById('duvidasList'); if(!box) return;
+  const admin=Auth.isAdmin();
+  const list=await loadDuvidas(aulaId);
+  if(document.getElementById('duvidasList')!==box) return; // trocou de aula enquanto carregava
+  if(!list.length){ box.innerHTML='<div class="duvida-empty">'+(admin?'Nenhuma dúvida nesta aula ainda.':'Seja o primeiro a perguntar — a Prisma responde por aqui.')+'</div>'; return; }
+  box.innerHTML = list.map(d=>`
+    <div class="duvida">
+      <div class="dv-q"><span class="dv-nome">${escHtml(d.nome||'Cliente')}</span><span class="dv-when">${avisoWhen(d.created_at)}</span></div>
+      <div class="dv-txt">${escHtml(d.texto)}</div>
+      ${d.resposta?`<div class="dv-resp"><span class="dv-resp-k">Prisma responde</span>${escHtml(d.resposta)}</div>`
+        : admin?`<div class="dv-answer"><textarea placeholder="Responder…" data-ans="${d.id}"></textarea><button class="btn cyan dv-send" data-send="${d.id}">Responder</button></div>`
+        : `<div class="dv-wait">Aguardando resposta da Prisma…</div>`}
+    </div>`).join('');
+  if(admin){ box.querySelectorAll('[data-send]').forEach(b=> b.onclick=async ()=>{ const ta=box.querySelector('[data-ans="'+b.dataset.send+'"]'); const r=(ta.value||'').trim(); if(!r){ toast('Escreva a resposta'); return; } b.disabled=true; b.textContent='Enviando…'; await answerDuvida(aulaId, b.dataset.send, r); toast('Resposta enviada ✓'); renderDuvidas(aulaId); }); }
+}
+
+/* ===== AVISOS / NOVIDADES ===== */
+let AVISOS_CACHE=[];
+async function loadAvisos(){
+  try{ const { data, error } = await sb.from('avisos').select('id,titulo,texto,created_at').order('created_at',{ascending:false}).limit(40); if(error) throw error; AVISOS_CACHE=data||[]; }
+  catch(e){ AVISOS_CACHE = LS.get('cp_avisos', []); }
+  updateBellDot();
+}
+async function postAviso(titulo, texto){
+  try{ const { data, error } = await sb.from('avisos').insert({ titulo, texto }).select('id,titulo,texto,created_at').single(); if(error) throw error; AVISOS_CACHE.unshift(data); }
+  catch(e){ const local={ id:'ls-'+Date.now(), titulo, texto, created_at:new Date().toISOString() }; AVISOS_CACHE.unshift(local); LS.set('cp_avisos', AVISOS_CACHE.filter(a=>String(a.id).startsWith('ls-'))); }
+  markAvisosSeen();
+}
+async function delAviso(id){
+  AVISOS_CACHE = AVISOS_CACHE.filter(a=>a.id!==id);
+  try{ if(!String(id).startsWith('ls-')) await sb.from('avisos').delete().eq('id',id); }catch(e){}
+  LS.set('cp_avisos', AVISOS_CACHE.filter(a=>String(a.id).startsWith('ls-')));
+}
+function avisoWhen(iso){ const ts=Date.parse(iso)||0; if(!ts) return ''; const min=Math.floor((Date.now()-ts)/60000); if(min<1) return 'agora'; if(min<60) return 'há '+min+' min'; const h=Math.floor(min/60); if(h<24) return 'há '+h+'h'; const d=Math.floor(h/24); return d===1?'ontem':'há '+d+' dias'; }
+function unseenCount(){ const seen=LS.get('cp_avisos_seen',0); return AVISOS_CACHE.filter(a=>(Date.parse(a.created_at)||0)>seen).length; }
+function markAvisosSeen(){ const max=AVISOS_CACHE.reduce((m,a)=>Math.max(m,Date.parse(a.created_at)||0),0); LS.set('cp_avisos_seen', Math.max(max, Date.now())); updateBellDot(); }
+function updateBellDot(){ const d=document.getElementById('bellDot'); if(!d) return; const n=unseenCount(); d.style.display=n>0?'flex':'none'; d.textContent=n>9?'9+':String(n); }
+function renderAvisos(){
+  const menu=document.getElementById('bellMenu'); if(!menu) return;
+  const admin=Auth.isAdmin(); const seen=LS.get('cp_avisos_seen',0);
+  let html='';
+  if(admin){ html += `<div class="bell-compose"><div class="bm-head" style="padding:0 0 8px">＋ Publicar aviso</div><input id="avT" placeholder="Título (ex.: Nova aula no ar)"><textarea id="avX" placeholder="Mensagem para os clientes…"></textarea><button class="btn green" id="avPost" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Publicar</button></div>`; }
+  html += `<div class="bm-head">Avisos & novidades</div>`;
+  if(!AVISOS_CACHE.length){ html += `<div class="bell-empty">Nenhum aviso ainda.${admin?' Publique o primeiro acima.':''}</div>`; }
+  else { html += AVISOS_CACHE.map(a=>{ const novo=(Date.parse(a.created_at)||0)>seen; return `<div class="aviso-item ${novo?'novo':''}">${admin?`<span class="av-del" data-del="${a.id}" title="Excluir">×</span>`:''}<div class="av-t">${escHtml(a.titulo)}</div>${a.texto?`<div class="av-x">${escHtml(a.texto)}</div>`:''}<div class="av-when">${avisoWhen(a.created_at)}</div></div>`; }).join(''); }
+  menu.innerHTML=html;
+  const pb=document.getElementById('avPost'); if(pb) pb.onclick=async ()=>{ const tt=(document.getElementById('avT').value||'').trim(), xx=(document.getElementById('avX').value||'').trim(); if(!tt){ toast('Escreva um título'); return; } pb.disabled=true; pb.textContent='Publicando…'; await postAviso(tt,xx); toast('Aviso publicado ✓'); renderAvisos(); };
+  menu.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>{ if(confirm('Excluir este aviso?')){ delAviso(b.dataset.del).then(renderAvisos); } });
+}
 async function createMember(empresaId, nome, email, papel, senha){
   try{
     const sb2 = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth:{ persistSession:false, storageKey:'cp-signup', autoRefreshToken:false } });
@@ -2550,7 +2739,7 @@ function show(view, isBack){
   if(view==='inicio') refreshProgress();
   if(view==='trilha') renderJornada();
   if(view==='gerir') renderAdmin();
-  if(view==='metricas') renderMetrics();
+  if(view==='metricas'){ if(!Auth.isAdmin() && !Auth.isGestor()){ show('inicio'); return; } renderMetrics(); }
   if(view==='empresas'){ empresaSel=null; renderEmpresas(); }
   if(view==='materiais') renderMateriais();
 }
@@ -2600,6 +2789,27 @@ document.addEventListener('click',e=>{
 
 /* mobile menu */
 bindPwEye('authPassEye','authPass');
+/* sino de avisos */
+(function(){
+  const b=document.getElementById('bellBtn'); if(!b) return;
+  b.onclick=(e)=>{ e.stopPropagation(); const m=document.getElementById('bellMenu'); const open=!m.classList.contains('open'); m.classList.toggle('open',open); if(open){ renderAvisos(); markAvisosSeen(); } };
+  document.addEventListener('click', e=>{ const w=document.getElementById('bellWrap'); if(w && !w.contains(e.target)) document.getElementById('bellMenu').classList.remove('open'); });
+})();
+/* PWA: instalar no celular */
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); _deferredPrompt=e; const b=document.getElementById('installBtn'); if(b) b.style.display='flex'; });
+window.addEventListener('appinstalled', ()=>{ const b=document.getElementById('installBtn'); if(b) b.style.display='none'; _deferredPrompt=null; toast('App instalado! 📲'); });
+(function(){
+  const b=document.getElementById('installBtn'); if(!b) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if(isIOS && !standalone){ b.style.display='flex'; }  // iOS não tem prompt: mostra instrução
+  b.onclick=async ()=>{
+    if(_deferredPrompt){ _deferredPrompt.prompt(); try{ await _deferredPrompt.userChoice; }catch(e){} _deferredPrompt=null; b.style.display='none'; }
+    else if(isIOS){ toast('No iPhone: toque em Compartilhar ⬆ e "Adicionar à Tela de Início".'); }
+    else { toast('Abra o menu do navegador e escolha "Instalar app".'); }
+  };
+})();
 document.addEventListener('click',e=>{
   if(!e.target.closest('#ytSpeed,#ytSpeedMenu')) document.getElementById('ytSpeedMenu')?.classList.remove('on');
   if(!e.target.closest('#ytQual,#ytQualMenu')) document.getElementById('ytQualMenu')?.classList.remove('on');
@@ -2696,7 +2906,9 @@ async function enterApp(){
   const _tw=document.getElementById('trilhasWrap');
   if(_tw && !_tw.children.length) _tw.innerHTML='<div class="sk-card"></div>'.repeat(4);
   // carrega dados compartilhados do Supabase
-  try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers(), loadProgresso() ]); }catch(e){}
+  try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers(), loadProgresso(), loadAvisos() ]); }catch(e){}
+  // gestor do cliente vê Métricas (só do próprio time)
+  if(!Auth.isAdmin() && Auth.isGestor()){ const nm=document.getElementById('navMetricas'); if(nm) nm.style.display=''; }
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   show('inicio');

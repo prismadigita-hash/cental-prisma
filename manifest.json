@@ -1,0 +1,17 @@
+{
+  "name": "Central Prisma",
+  "short_name": "Central Prisma",
+  "description": "Plataforma de implantação do método Prisma — aulas, scripts e acompanhamento.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0B0A0D",
+  "theme_color": "#0B0A0D",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

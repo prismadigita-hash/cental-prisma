@@ -321,5 +321,68 @@ create policy empresa_trilhas_admin on public.empresa_trilhas for all to authent
   using ( public.is_admin() ) with check ( public.is_admin() );
 
 -- =====================================================================
+-- AVISOS / NOVIDADES (admin publica, todos leem)
+-- =====================================================================
+create table if not exists public.avisos (
+  id         uuid primary key default gen_random_uuid(),
+  titulo     text not null,
+  texto      text,
+  created_at timestamptz not null default now()
+);
+alter table public.avisos enable row level security;
+drop policy if exists avisos_read on public.avisos;
+create policy avisos_read on public.avisos for select to authenticated using ( true );
+drop policy if exists avisos_admin on public.avisos;
+create policy avisos_admin on public.avisos for all to authenticated using ( public.is_admin() ) with check ( public.is_admin() );
+
+-- =====================================================================
+-- DÚVIDAS POR AULA (aluno pergunta, admin responde)
+-- =====================================================================
+create table if not exists public.duvidas (
+  id          uuid primary key default gen_random_uuid(),
+  aula_id     uuid references public.aulas(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  nome        text,
+  texto       text not null,
+  resposta    text,
+  created_at  timestamptz not null default now(),
+  answered_at timestamptz
+);
+alter table public.duvidas enable row level security;
+drop policy if exists duvidas_select on public.duvidas;
+create policy duvidas_select on public.duvidas for select to authenticated
+  using ( public.is_admin() or user_id = auth.uid() );
+drop policy if exists duvidas_insert on public.duvidas;
+create policy duvidas_insert on public.duvidas for insert to authenticated
+  with check ( user_id = auth.uid() );
+drop policy if exists duvidas_admin on public.duvidas;
+create policy duvidas_admin on public.duvidas for update to authenticated
+  using ( public.is_admin() ) with check ( public.is_admin() );
+drop policy if exists duvidas_del on public.duvidas;
+create policy duvidas_del on public.duvidas for delete to authenticated
+  using ( public.is_admin() or user_id = auth.uid() );
+
+-- =====================================================================
+-- PAINEL DO GESTOR — o gestor da empresa lê as métricas do próprio time
+-- =====================================================================
+create or replace function public.membros_que_gerencio()
+returns setof uuid language sql security definer set search_path = '' stable as $$
+  select m.user_id from public.empresa_membros m
+  where m.empresa_id in (
+    select g.empresa_id from public.empresa_membros g
+    where g.user_id = auth.uid() and g.papel = 'gestor'
+  );
+$$;
+drop policy if exists eventos_select_gestor on public.eventos;
+create policy eventos_select_gestor on public.eventos for select to authenticated
+  using ( user_id in (select public.membros_que_gerencio()) );
+drop policy if exists progresso_select_gestor on public.progresso;
+create policy progresso_select_gestor on public.progresso for select to authenticated
+  using ( user_id in (select public.membros_que_gerencio()) );
+drop policy if exists profiles_select_gestor on public.profiles;
+create policy profiles_select_gestor on public.profiles for select to authenticated
+  using ( id in (select public.membros_que_gerencio()) );
+
+-- =====================================================================
 -- FIM.
 -- =====================================================================
