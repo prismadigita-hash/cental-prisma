@@ -815,6 +815,20 @@
   .admin-list .al-grip svg{width:20px; height:20px}
   .admin-list .al-item.drag:hover{border-color:var(--g500)}
   .admin-list .al-item.dragging{opacity:.45; border-color:var(--cyan); background:var(--cyan-soft)}
+
+  /* ===== gerir trilhas ===== */
+  .trilhas-admin{background:var(--navy-deep); border:1px solid var(--line); border-radius:var(--r-card); padding:16px 18px; margin-bottom:22px}
+  .trilhas-admin .ta-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+  .trilhas-admin .btn.ta-newbtn{padding:8px 14px; font-size:12.5px}
+  .trilhas-admin .ta-form{display:none; margin-bottom:14px; padding:14px; background:var(--bg); border:1px solid var(--line); border-radius:11px}
+  .trilhas-admin .ta-form input{width:100%; background:var(--navy); border:1px solid var(--line); border-radius:9px; color:var(--g100); font-family:inherit; font-size:13px; padding:10px 12px; margin-bottom:9px}
+  .trilhas-admin .ta-form input:focus{outline:none; border-color:var(--cyan)}
+  .trilhas-admin .ta-form-act{display:flex; gap:9px}
+  .trilhas-admin .ta-list{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:9px}
+  .trilhas-admin .ta-item{display:flex; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+  .trilhas-admin .ta-info{flex:1; min-width:0}
+  .trilhas-admin .ta-info b{display:block; font-size:13px; font-weight:700; color:var(--g100); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .trilhas-admin .ta-info span{font-family:var(--mono); font-size:9.5px; letter-spacing:.5px; color:var(--g500); text-transform:uppercase}
   .admin-list .al-ord{display:flex; flex-direction:column; gap:3px; flex-shrink:0}
   .admin-list .al-ord button{width:24px; height:20px; border-radius:6px; background:transparent; border:1px solid var(--line); color:var(--g300); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0}
   .admin-list .al-ord button:hover:not(:disabled){border-color:var(--cyan); color:var(--cyan)}
@@ -1237,6 +1251,7 @@
       <h1>Gerir aulas</h1>
       <div class="sub">Cadastre uma aula e cole o link do YouTube — ela aparece na plataforma na hora, tocando dentro da Central. É assim que você "pluga" cada aula gravada.</div>
     </div>
+    <div class="trilhas-admin" id="trilhasAdmin"></div>
     <div class="admin-grid">
       <form class="admin-form" id="adminForm" autocomplete="off">
         <div class="af-k" id="afTitle">＋ Nova aula</div>
@@ -1760,12 +1775,13 @@ async function loadProgresso(){
    tabela ainda não existir, cai pra localStorage por empresa.
    ===================================================================== */
 const JORNADA = [
-  {k:'diagnostico', lane:'impl',   t:'Diagnóstico',             d:'Entendemos seu negócio, seus números atuais e o principal gargalo.'},
-  {k:'oferta',      lane:'impl',   t:'Ofertas de campanha',     d:'Montamos a oferta e o plano de campanha do seu produto.'},
-  {k:'anuncios',    lane:'impl',   t:'Anúncios no ar',          d:'Criativos publicados — os anúncios já estão rodando e trazendo lead.'},
-  {k:'treino-wpp',  lane:'treino', t:'Assistir o treinamento de WhatsApp', d:'Seu time assistiu às aulas e aplicou o atendimento no WhatsApp.'},
-  {k:'scripts',     lane:'treino', t:'Começar a praticar os scripts',      d:'Scripts prontos sendo usados de verdade nas conversas do dia a dia.'},
-  {k:'acompanha',   lane:'treino', t:'Acompanhar os números',             d:'Leitura dos números toda semana e ajuste de rota com a Prisma.'},
+  {k:'reuniao-diag',    lane:'impl',   t:'Reunião de diagnóstico',        d:'Entendemos seu negócio, seus números atuais e o principal gargalo.'},
+  {k:'reuniao-acessos', lane:'impl',   t:'Reunião de acessos',            d:'Alinhamos e configuramos os acessos necessários pra colocar tudo no ar.'},
+  {k:'criativos',       lane:'impl',   t:'Produção de criativos e vídeos', d:'Criação dos criativos, roteiros e vídeos da sua campanha.'},
+  {k:'anuncios',        lane:'impl',   t:'Anúncios no ar',                d:'Criativos publicados — os anúncios já estão rodando e trazendo lead.'},
+  {k:'treino-wpp',      lane:'treino', t:'Assistir o treinamento de WhatsApp', d:'Seu time assistiu às aulas e aplicou o atendimento no WhatsApp.'},
+  {k:'scripts',         lane:'treino', t:'Começar a praticar os scripts',      d:'Scripts prontos sendo usados de verdade nas conversas do dia a dia.'},
+  {k:'acompanha',       lane:'treino', t:'Acompanhar os números',              d:'Leitura dos números toda semana e ajuste de rota com a Prisma.'},
 ];
 async function loadJornada(empId){
   try{
@@ -1797,7 +1813,7 @@ async function renderJornada(){
   wrap.innerHTML='<div class="hint" style="color:var(--g500)">Carregando…</div>';
   const done = await loadJornada(emp);
   const admin = Auth.isAdmin();
-  if(sub && admin){ const e=EMP_CACHE.find(x=>x.id===emp); sub.textContent = 'Você marca as etapas de execução (Diagnóstico, Ofertas, Anúncios). O cliente marca o treinamento.' + (e?(' · Empresa: '+e.nome):''); }
+  if(sub && admin){ const e=EMP_CACHE.find(x=>x.id===emp); sub.textContent = 'Você marca as etapas de execução (reuniões, criativos, anúncios). O cliente marca o treinamento.' + (e?(' · Empresa: '+e.nome):''); }
   let currentIdx = JORNADA.findIndex(s=>!done.has(s.k));
   const total=JORNADA.length, dc=JORNADA.filter(s=>done.has(s.k)).length;
   wrap.innerHTML = JORNADA.map((s,i)=>{
@@ -1870,7 +1886,8 @@ const SCRIPTS = [
    TRILHAS TEMÁTICAS (home) — coleções de aulas por tema
    ===================================================================== */
 function trilhaBg(tint){ return `radial-gradient(120% 85% at 72% 8%, ${tint}, transparent 58%), linear-gradient(158deg, #17121c, #0a0910)`; }
-const TRILHAS = [
+const DEFAULT_IC = '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>';
+const DEFAULT_TRILHAS = [
   {id:'inicio', sup:'Comece por', nome:'Aqui', desc:'O panorama do método e como usar a plataforma.', grad:trilhaBg('rgba(255,77,109,.45)'), ic:'<path d="M5 3v18"/><path d="M5 4h11l-2 3 2 3H5"/>', aulas:['aulao-intro','como-usar']},
   {id:'sondagem', sup:'Trilha de', nome:'Sondagem', desc:'Saudação que engaja e os 4 pilares antes do preço.', grad:trilhaBg('rgba(255,77,109,.5)'), ic:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', aulas:['saudacao','sondagem','preco-contexto']},
   {id:'followup', sup:'Trilha de', nome:'Follow-up', desc:'A régua D+1 a D+7 e como reativar o lead que sumiu.', grad:trilhaBg('rgba(232,155,60,.45)'), ic:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>', aulas:['regua-followup','fechamento','objecoes']},
@@ -1878,6 +1895,33 @@ const TRILHAS = [
   {id:'trafego', sup:'Anúncios &', nome:'Tráfego', desc:'Oferta, criativos e roteiros que trazem lead qualificado.', grad:trilhaBg('rgba(255,77,109,.48)'), ic:'<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M14 8a4 4 0 0 1 0 8"/>', aulas:['oferta-lead','anatomia-anuncio','roteiro-video','diag-revela']},
   {id:'indicadores', sup:'Leitura de', nome:'Indicadores', desc:'Ler a PGM, os 12 KPIs e achar o gargalo da semana.', grad:trilhaBg('rgba(111,230,158,.4)'), ic:'<path d="M3 20h18"/><rect x="5" y="11" width="3.2" height="7"/><rect x="10.4" y="7" width="3.2" height="11"/><rect x="15.8" y="4" width="3.2" height="14"/>', aulas:['kpis','marcos-90']},
 ];
+let TRILHAS = DEFAULT_TRILHAS.map(t=>({...t, aulas:t.aulas.slice()}));
+function _slugTrilha(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,32) || 'trilha'; }
+async function loadTrilhas(){
+  try{
+    const { data, error } = await sb.from('trilhas').select('id,nome,sup,descricao,grad,ic,ordem').order('ordem');
+    if(error) throw error;
+    if(data && data.length){
+      TRILHAS = data.map(t=>({ id:t.id, nome:t.nome, sup:t.sup||'', desc:t.descricao||'', grad:t.grad||trilhaBg('rgba(255,77,109,.45)'), ic:t.ic||DEFAULT_IC, ordem:t.ordem||0, aulas:[] }));
+    } else {
+      TRILHAS = DEFAULT_TRILHAS.map(t=>({...t, aulas:[]}));
+    }
+  }catch(e){ TRILHAS = DEFAULT_TRILHAS.map(t=>({...t, aulas:[]})); }
+}
+async function createTrilha(nome, sup, desc){
+  nome=(nome||'').trim(); if(!nome) return {error:'Informe o nome da trilha'};
+  let base=_slugTrilha(nome), id=base, n=1;
+  while(TRILHAS.some(t=>t.id===id)) id=base+'-'+(++n);
+  const row={ id, nome, sup:(sup||'Trilha de').trim(), descricao:(desc||'').trim()||null, grad:trilhaBg('rgba(255,77,109,.45)'), ic:DEFAULT_IC, ordem:TRILHAS.length };
+  try{ const { error }=await sb.from('trilhas').insert(row); if(error) return {error:error.message}; }
+  catch(e){ return {error:String(e)}; }
+  return {ok:true, id};
+}
+async function removeTrilha(id){
+  try{ const { error }=await sb.from('trilhas').delete().eq('id', id); if(error) return {error:error.message}; }
+  catch(e){ return {error:String(e)}; }
+  return {ok:true};
+}
 let trilhaSet=null, trilhaCur=null;
 function renderTrilhas(){
   const wrap=document.getElementById('trilhasWrap'); if(!wrap) return;
@@ -2237,11 +2281,36 @@ function greeting(){
    ===================================================================== */
 function slugify(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || ('aula-'+Date.now()); }
 
+function renderTrilhasAdmin(){
+  const box=document.getElementById('trilhasAdmin'); if(!box) return;
+  box.innerHTML = `
+    <div class="ta-head"><span class="af-k" style="margin:0">Trilhas · ${TRILHAS.length}</span><button type="button" class="btn cyan ta-newbtn" id="taNew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nova trilha</button></div>
+    <form class="ta-form" id="taForm" style="display:none">
+      <input id="taNome" placeholder="Nome da trilha (ex.: Prospecção)" autocomplete="off">
+      <input id="taSup" placeholder="Prefixo (ex.: Trilha de)" value="Trilha de" autocomplete="off">
+      <input id="taDesc" placeholder="Descrição curta (opcional)" autocomplete="off">
+      <div class="ta-form-act"><button type="submit" class="btn green"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar trilha</button><button type="button" class="btn ghost" id="taCancel">Cancelar</button></div>
+    </form>
+    <div class="ta-list">${TRILHAS.map(t=>{ const n=(t.aulas||[]).length; return `<div class="ta-item"><div class="ta-info"><b>${(t.sup+' '+t.nome).trim()}</b><span>${n} aula${n!==1?'s':''}</span></div><button class="icon-btn del" data-rmtrilha="${t.id}" title="Remover trilha"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`; }).join('') || '<div class="hint" style="color:var(--g500)">Nenhuma trilha ainda — crie a primeira.</div>'}</div>`;
+  const form=document.getElementById('taForm');
+  document.getElementById('taNew').onclick=()=>{ const open=form.style.display==='none'; form.style.display=open?'block':'none'; if(open) document.getElementById('taNome').focus(); };
+  document.getElementById('taCancel').onclick=()=>{ form.style.display='none'; };
+  form.onsubmit=async (e)=>{ e.preventDefault(); const btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Criando…';
+    const r=await createTrilha(document.getElementById('taNome').value, document.getElementById('taSup').value, document.getElementById('taDesc').value);
+    if(r.error){ btn.disabled=false; btn.innerHTML='Criar trilha'; toast('Erro: '+r.error); return; }
+    await loadTrilhas(); await loadAulas(); renderAdmin(); renderTrilhaChips(); renderTrilhas(); toast('Trilha criada ✓'); };
+  box.querySelectorAll('[data-rmtrilha]').forEach(b=> b.onclick=async ()=>{
+    const t=TRILHAS.find(x=>x.id===b.dataset.rmtrilha); const n=((t&&t.aulas)||[]).length;
+    if(!confirm('Remover a trilha "'+(t?(t.sup+' '+t.nome).trim():'')+'"?'+(n?(' As '+n+' aula(s) NÃO serão apagadas — só ficam sem trilha.'):''))) return;
+    const r=await removeTrilha(b.dataset.rmtrilha); if(r.error){ toast('Erro: '+r.error); return; }
+    await loadTrilhas(); await loadAulas(); renderAdmin(); renderTrilhaChips(); renderTrilhas(); toast('Trilha removida'); });
+}
 function renderAdmin(){
   const AULAS = DB.aulas();
+  renderTrilhasAdmin();
   document.getElementById('adminCount').textContent = AULAS.length+' aula'+(AULAS.length!==1?'s':'');
   const tsel=document.getElementById('afTrilha');
-  if(tsel && !tsel.options.length){ tsel.innerHTML = TRILHAS.map(t=>`<option value="${t.id}">${(t.sup+' '+t.nome).trim()}</option>`).join(''); }
+  if(tsel){ const cur=tsel.value; tsel.innerHTML = TRILHAS.map(t=>`<option value="${t.id}">${(t.sup+' '+t.nome).trim()}</option>`).join(''); if(cur && TRILHAS.some(t=>t.id===cur)) tsel.value=cur; }
   const itemHTML=(a, tid, i)=>{
     const id = ytId(a.yt);
     const grip = tid ? `<div class="al-grip" title="Arraste para reordenar"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>` : '';
@@ -2914,6 +2983,7 @@ async function enterApp(){
   const _tw=document.getElementById('trilhasWrap');
   if(_tw && !_tw.children.length) _tw.innerHTML='<div class="sk-card"></div>'.repeat(4);
   // carrega dados compartilhados do Supabase
+  try{ await loadTrilhas(); }catch(e){}
   try{ await Promise.all([ loadAulas(), loadEmpresas(), loadMateriais(), loadCovers(), loadProgresso(), loadAvisos() ]); }catch(e){}
   // gestor do cliente vê Métricas (só do próprio time)
   if(!Auth.isAdmin() && Auth.isGestor()){ const nm=document.getElementById('navMetricas'); if(nm) nm.style.display=''; }
