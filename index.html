@@ -808,6 +808,13 @@
   .admin-list .adm-th{font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--cyan); margin:16px 0 9px; display:flex; align-items:center; gap:8px}
   .admin-list .adm-th::after{content:""; flex:1; height:1px; background:var(--line)}
   .admin-list .adm-th:first-child{margin-top:0}
+  .admin-list .adm-hint{font-family:var(--mono); font-size:8.5px; font-weight:600; letter-spacing:.5px; color:var(--g500); text-transform:none; margin-left:2px}
+  .admin-list .adm-group{display:flex; flex-direction:column}
+  .admin-list .al-grip{display:flex; align-items:center; justify-content:center; flex-shrink:0; width:22px; color:var(--g500); cursor:grab; touch-action:none}
+  .admin-list .al-grip:active{cursor:grabbing}
+  .admin-list .al-grip svg{width:20px; height:20px}
+  .admin-list .al-item.drag:hover{border-color:var(--g500)}
+  .admin-list .al-item.dragging{opacity:.45; border-color:var(--cyan); background:var(--cyan-soft)}
   .admin-list .al-ord{display:flex; flex-direction:column; gap:3px; flex-shrink:0}
   .admin-list .al-ord button{width:24px; height:20px; border-radius:6px; background:transparent; border:1px solid var(--line); color:var(--g300); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0}
   .admin-list .al-ord button:hover:not(:disabled){border-color:var(--cyan); color:var(--cyan)}
@@ -2235,14 +2242,11 @@ function renderAdmin(){
   document.getElementById('adminCount').textContent = AULAS.length+' aula'+(AULAS.length!==1?'s':'');
   const tsel=document.getElementById('afTrilha');
   if(tsel && !tsel.options.length){ tsel.innerHTML = TRILHAS.map(t=>`<option value="${t.id}">${(t.sup+' '+t.nome).trim()}</option>`).join(''); }
-  const itemHTML=(a, tid, i, n)=>{
+  const itemHTML=(a, tid, i)=>{
     const id = ytId(a.yt);
-    const ord = tid ? `<div class="al-ord">
-        <button data-move="up" data-tid="${tid}" data-aid="${a.id}" ${i===0?'disabled':''} title="Subir"><svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg></button>
-        <button data-move="down" data-tid="${tid}" data-aid="${a.id}" ${i===n-1?'disabled':''} title="Descer"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
-      </div>` : '';
-    return `<div class="al-item">
-      ${ord}
+    const grip = tid ? `<div class="al-grip" title="Arraste para reordenar"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>` : '';
+    return `<div class="al-item${tid?' drag':''}" ${tid?`draggable="true" data-tid="${tid}" data-aid="${a.id}"`:''}>
+      ${grip}
       <div class="al-thumb">${id?`<img src="${ytThumb(id)}" alt="">`:`<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`}</div>
       <div class="al-meta"><b>${i>=0?(i+1)+'. ':''}${a.t}</b><span>${a.dur||'—'} · <span class="al-yt ${id?'':'no'}">${id?'vídeo linkado':'sem vídeo'}</span></span></div>
       <div class="al-act">
@@ -2256,21 +2260,25 @@ function renderAdmin(){
     const ids = t.aulas||[];
     const list = ids.map(id=>AULAS.find(a=>a.id===id)).filter(Boolean);
     if(!list.length) return;
-    html += `<div class="adm-th">${(t.sup+' '+t.nome).trim()} · ${list.length}</div>`;
-    list.forEach((a,i)=>{ html += itemHTML(a, t.id, i, list.length); });
+    html += `<div class="adm-th">${(t.sup+' '+t.nome).trim()} · ${list.length} <span class="adm-hint">arraste para ordenar</span></div>`;
+    html += `<div class="adm-group" data-tid="${t.id}">` + list.map((a,i)=>itemHTML(a, t.id, i)).join('') + `</div>`;
   });
   const semTrilha = AULAS.filter(a=>!AULA_TRILHA[a.id]);
-  if(semTrilha.length){ html += `<div class="adm-th">Sem trilha · ${semTrilha.length}</div>`; semTrilha.forEach(a=>{ html += itemHTML(a, null, -1, 0); }); }
+  if(semTrilha.length){ html += `<div class="adm-th">Sem trilha · ${semTrilha.length}</div>` + semTrilha.map(a=>itemHTML(a, null, -1)).join(''); }
   document.getElementById('adminList').innerHTML = html || `<div class="empty"><h4>Nenhuma aula cadastrada</h4><p>Use o formulário ao lado pra adicionar a primeira.</p></div>`;
-  document.querySelectorAll('#adminList [data-move]').forEach(b=> b.onclick=async ()=>{
-    const tid=b.dataset.tid, aid=b.dataset.aid, dir=b.dataset.move;
-    const t=TRILHAS.find(x=>x.id===tid); if(!t) return;
-    const ids=(t.aulas||[]).slice(); const idx=ids.indexOf(aid); if(idx<0) return;
-    const j = dir==='up'? idx-1 : idx+1; if(j<0||j>=ids.length) return;
-    [ids[idx], ids[j]] = [ids[j], ids[idx]];
-    document.querySelectorAll('#adminList [data-move]').forEach(x=>x.disabled=true);
-    await reorderTrilha(tid, ids);
-    await loadAulas(); renderAdmin(); renderTrilhas(); toast('Ordem atualizada ✓');
+  // ---- arrastar para reordenar (dentro da mesma trilha) ----
+  function admGetAfter(group, y){
+    let best=null, bestOff=-Infinity;
+    group.querySelectorAll('.al-item:not(.dragging)').forEach(el=>{ const b=el.getBoundingClientRect(); const off=y-b.top-b.height/2; if(off<0 && off>bestOff){ bestOff=off; best=el; } });
+    return best;
+  }
+  document.querySelectorAll('#adminList .al-item.drag').forEach(el=>{
+    el.addEventListener('dragstart', e=>{ el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', el.dataset.aid); }catch(_){} });
+    el.addEventListener('dragend', ()=>{ el.classList.remove('dragging'); });
+  });
+  document.querySelectorAll('#adminList .adm-group').forEach(group=>{
+    group.addEventListener('dragover', e=>{ const dragging=document.querySelector('#adminList .al-item.dragging'); if(!dragging || dragging.dataset.tid!==group.dataset.tid) return; e.preventDefault(); const after=admGetAfter(group, e.clientY); if(after==null) group.appendChild(dragging); else if(after!==dragging.nextSibling) group.insertBefore(dragging, after); });
+    group.addEventListener('drop', async e=>{ const dragging=document.querySelector('#adminList .al-item.dragging'); if(!dragging || dragging.dataset.tid!==group.dataset.tid) return; e.preventDefault(); const tid=group.dataset.tid; const ids=[...group.querySelectorAll('.al-item')].map(x=>x.dataset.aid); await reorderTrilha(tid, ids); await loadAulas(); renderAdmin(); renderTrilhas(); toast('Ordem salva ✓'); });
   });
   document.querySelectorAll('#adminList [data-edit]').forEach(b=> b.onclick=()=>editAula(b.dataset.edit));
   document.querySelectorAll('#adminList [data-del]').forEach(b=> b.onclick=async ()=>{
