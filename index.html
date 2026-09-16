@@ -2929,9 +2929,39 @@ const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 let navStack=[];
 function currentView(){ const el=document.querySelector('.view.on'); return el ? el.id.replace('v-','') : null; }
-function goBack(){ const prev=navStack.pop(); show(prev||'inicio', true); }
+/* view permitida pro usuário atual — admin passa em tudo */
+function isViewAllowed(view){
+  if(Auth.isAdmin()) return true;
+  // views só de admin/gestor não passam
+  if(view==='gerir' || view==='empresas') return false;
+  if(view==='metricas') return Auth.isGestor();
+  // aula/aulas só aparecem se trilha está liberada
+  if(view==='aula' || view==='aulas') return true; // controle fino dentro do render
+  const allowed = abasVisiveis();
+  if(!allowed) return true; // sem restrição = passa
+  return NAV_KEYS.includes(view) ? allowed.has(view) : true;
+}
+function firstAllowedView(){
+  if(Auth.isAdmin()) return 'inicio';
+  const allowed = abasVisiveis();
+  if(!allowed) return 'inicio';
+  return NAV_KEYS.find(k=>allowed.has(k)) || 'materiais';
+}
+function goBack(){
+  // ignora entradas bloqueadas ao voltar (o histórico só guarda o que o cliente pode ver)
+  let prev;
+  while((prev = navStack.pop())){
+    if(isViewAllowed(prev)) break;
+  }
+  show(prev || firstAllowedView(), true);
+}
 function show(view, isBack){
-  if(!isBack){ const cur=currentView(); if(cur && cur!==view) navStack.push(cur); }
+  // proteção de rota: view bloqueada pro cliente vira a primeira permitida
+  if(!isViewAllowed(view)){
+    view = firstAllowedView();
+    isBack = true; // não empilha
+  }
+  if(!isBack){ const cur=currentView(); if(cur && cur!==view && isViewAllowed(cur)) navStack.push(cur); }
   if(view!=='aula') stopYT();
   views.forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+view)?.classList.add('on');
@@ -2942,9 +2972,10 @@ function show(view, isBack){
   if(view==='inicio') refreshProgress();
   if(view==='trilha') renderJornada();
   if(view==='gerir') renderAdmin();
-  if(view==='metricas'){ if(!Auth.isAdmin() && !Auth.isGestor()){ show('inicio'); return; } renderMetrics(); }
+  if(view==='metricas'){ if(!Auth.isAdmin() && !Auth.isGestor()){ show(firstAllowedView()); return; } renderMetrics(); }
   if(view==='empresas'){ empresaSel=null; renderEmpresas(); }
   if(view==='materiais') renderMateriais();
+  applyNavPermissions();
 }
 navItems.forEach(n=>n.addEventListener('click',()=>{
   if(n.dataset.view==='aulas'){ trilhaSet=null; setAulasHead(null); setActiveTrilhaChip(''); renderAulas(currentFilter, (document.getElementById('globalSearch').value||'').trim().toLowerCase()); }
@@ -3124,10 +3155,8 @@ async function enterApp(){
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
   applyNavPermissions();
-  // primeira view: se cliente tem restrição e "inicio" não tá liberado, vai pra primeira permitida
-  const _allowedBoot = abasVisiveis();
-  const _firstView = (!_allowedBoot || _allowedBoot.has('inicio')) ? 'inicio' : (NAV_KEYS.find(k=>_allowedBoot.has(k)) || 'inicio');
-  show(_firstView);
+  // show() já protege rota bloqueada — se "inicio" for bloqueado pro cliente, cai na primeira permitida sozinho
+  show('inicio');
   setTimeout(()=>{ try{ loadYTApi(()=>{}); }catch(e){} }, 800);   // aquece o player: 1º vídeo abre na hora
 }
 
