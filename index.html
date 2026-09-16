@@ -952,6 +952,9 @@
   .material-card .mc-cover{height:132px; background:linear-gradient(135deg, rgba(255,77,109,.18) 0%, rgba(114,229,239,.10) 60%, rgba(11,10,13,.4) 100%); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden}
   .material-card .mc-cover::before{content:""; position:absolute; inset:0; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.06), transparent 60%); pointer-events:none}
   .material-card .mc-cover svg{width:54px; height:54px; stroke:var(--cyan); stroke-width:1.4; fill:none; opacity:.9; filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+  .material-card .mc-cover-manual{padding:0; background:none}
+  .material-card .mc-cover-manual::before{display:none}
+  .material-card .mc-cover-manual svg{width:100%; height:100%; stroke:none; opacity:1; filter:none}
   .material-card .mc-body{padding:18px 20px 18px; flex:1; display:flex; flex-direction:column; gap:6px; min-width:0}
   .material-card h4{font-size:16px; font-weight:800; letter-spacing:-.2px; line-height:1.25; color:var(--g100)}
   .material-card p{font-size:13px; color:var(--g400); line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:0}
@@ -2433,6 +2436,9 @@ function collectMats(){
    EMPRESAS E ACESSOS (admin) + seletor de empresa
    ===================================================================== */
 const EMP = { all(){ return EMP_CACHE; } };
+/* ABAS DA PLATAFORMA (visíveis pro cliente) — sem linhas em empresa_abas = vê todas */
+const NAV_KEYS = ['inicio','trilha','scripts','checklists','materiais'];
+const NAV_LABELS = { inicio:'Início', trilha:'Onde você está', scripts:'Scripts', checklists:'Checklists', materiais:'Materiais' };
 async function loadEmpresas(){
   try{
     const { data:emps } = await sb.from('empresas').select('id,nome').order('nome');
@@ -2447,8 +2453,49 @@ async function loadEmpresas(){
     const et = await sb.from('empresa_trilhas').select('empresa_id,trilha_id');
     if(et.error){ liber = LS.get('cp_emptrilhas', {}); }           // fallback: {empId:[ids]}
     else { (et.data||[]).forEach(x=>{ (liber[x.empresa_id]=liber[x.empresa_id]||[]).push(x.trilha_id); }); }
-    EMP_CACHE = (emps||[]).map(e=>({ id:e.id, nome:e.nome, membros: byEmp[e.id]||[], trilhas_liberadas: liber[e.id]||[] }));
+    // abas liberadas por empresa — mesma lógica (empresa_abas). SEM linhas = vê todas.
+    let liberA={};
+    try{
+      const ea = await sb.from('empresa_abas').select('empresa_id,aba_key');
+      if(ea.error){ liberA = LS.get('cp_empabas', {}); }
+      else { (ea.data||[]).forEach(x=>{ (liberA[x.empresa_id]=liberA[x.empresa_id]||[]).push(x.aba_key); }); }
+    }catch(_){ liberA = LS.get('cp_empabas', {}); }
+    EMP_CACHE = (emps||[]).map(e=>({ id:e.id, nome:e.nome, membros: byEmp[e.id]||[], trilhas_liberadas: liber[e.id]||[], abas_liberadas: liberA[e.id]||[] }));
   }catch(e){ EMP_CACHE=[]; }
+}
+async function saveEmpAbas(empId, allowedKeys){
+  // instantâneo: cache + localStorage (mesma lógica das trilhas)
+  const ls=LS.get('cp_empabas', {}); ls[empId]=allowedKeys.slice(); LS.set('cp_empabas', ls);
+  const e=EMP_CACHE.find(x=>x.id===empId); if(e){ e.abas_liberadas=allowedKeys.slice(); }
+  try{
+    const del = await sb.from('empresa_abas').delete().eq('empresa_id',empId); if(del.error) throw del.error;
+    if(allowedKeys.length){ const ins = await sb.from('empresa_abas').insert(allowedKeys.map(k=>({empresa_id:empId, aba_key:k}))); if(ins.error) throw ins.error; }
+    return true;
+  }catch(err){ return false; }
+}
+/* abas visíveis pro usuário atual — admin vê tudo; sem liberação = vê todas */
+function abasVisiveis(){
+  if(Auth.isAdmin()) return null; // null = todas
+  const e = EMP_CACHE.find(x=>x.id===activeEmpresa) || EMP_CACHE[0];
+  const lib = e && e.abas_liberadas || [];
+  return lib.length ? new Set(lib) : null;
+}
+function applyNavPermissions(){
+  if(Auth.isAdmin()) return; // admin nunca é filtrado
+  const allowed = abasVisiveis();
+  document.querySelectorAll('.nav-item').forEach(btn=>{
+    if(btn.classList.contains('admin-only')) return; // admin-only já é escondido pelo boot
+    const v = btn.dataset.view; if(!v || !NAV_KEYS.includes(v)) return;
+    btn.style.display = (!allowed || allowed.has(v)) ? '' : 'none';
+  });
+  // se a view ativa foi bloqueada, manda pra primeira aba permitida
+  if(allowed){
+    const active = document.querySelector('.nav-item.active');
+    if(active && active.dataset.view && NAV_KEYS.includes(active.dataset.view) && !allowed.has(active.dataset.view)){
+      const first = NAV_KEYS.find(k=>allowed.has(k));
+      if(first) show(first);
+    }
+  }
 }
 async function saveEmpresaTrilhas(empId, allowedIds){
   // instantâneo (cache + localStorage) — a UI nunca trava esperando o banco
@@ -2580,7 +2627,7 @@ function renderEmpSwitch(){
   const active=list.find(e=>e.id===activeEmpresa);
   document.getElementById('empName').textContent = active?active.nome:'—';
   document.getElementById('empMenu').innerHTML = list.map(e=>`<button type="button" class="es-item ${e.id===activeEmpresa?'on':''}" data-emp="${e.id}"><span class="mk">${e.nome.charAt(0)}</span>${e.nome}<svg class="es-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('');
-  document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); if(currentView()==='trilha') renderJornada(); });
+  document.querySelectorAll('#empMenu .es-item').forEach(b=> b.onclick=()=>{ activeEmpresa=b.dataset.emp; LS.set('cp_active_emp', activeEmpresa); box.classList.remove('open'); renderEmpSwitch(); applyNavPermissions(); if(currentView()==='trilha') renderJornada(); });
 }
 function genPass(){ return 'Aulas' + Math.floor(1000 + Math.random()*9000); }
 function _hash3(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return (h%900+100); } // 100–999 estável
@@ -2642,6 +2689,14 @@ function renderEmpresas(){
         </div>
         <div class="et-grid" id="etGrid">${TRILHAS.map(t=>{ const on = e.trilhas_liberadas.length===0 || e.trilhas_liberadas.includes(t.id); return `<button type="button" class="et-item ${on?'on':''}" data-et="${t.id}" aria-pressed="${on}"><span class="et-check"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="et-name">${(t.sup+' '+t.nome).trim()}</span><span class="et-state">${on?'Liberada':'Bloqueada'}</span></button>`; }).join('')}</div>
         <div class="et-foot"><span id="etCount" class="et-count"></span><button class="btn green" id="etSave"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar</button></div>
+      </div>
+      <div class="side-card" id="empAbasCard" style="margin-top:18px">
+        <div class="et-head">
+          <div><div class="sc-k" style="margin:0">Acesso às abas da plataforma</div><div class="hint" style="margin-top:4px">Toque pra <b>liberar</b> ou <b>bloquear</b> cada aba do menu lateral para <b>${e.nome}</b>. Útil pra mostrar só o que faz sentido nesse momento (ex.: só Materiais).</div></div>
+          <div class="et-actions"><button type="button" class="lnk-gen" id="eaAll">Liberar todas</button></div>
+        </div>
+        <div class="et-grid" id="eaGrid">${NAV_KEYS.map(k=>{ const on = e.abas_liberadas.length===0 || e.abas_liberadas.includes(k); return `<button type="button" class="et-item ${on?'on':''}" data-ea="${k}" aria-pressed="${on}"><span class="et-check"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="et-name">${NAV_LABELS[k]}</span><span class="et-state">${on?'Liberada':'Bloqueada'}</span></button>`; }).join('')}</div>
+        <div class="et-foot"><span id="eaCount" class="et-count"></span><button class="btn green" id="eaSave"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar</button></div>
       </div>`;
     document.getElementById('empBack').onclick=()=>{ empresaSel=null; renderEmpresas(); };
     // acesso às trilhas por empresa (toggle em cada card; tudo liberado = vê todas)
@@ -2664,6 +2719,30 @@ function renderEmpresas(){
         const ok=await saveEmpresaTrilhas(empresaSel, allowed);
         save.disabled=false; save.innerHTML='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar';
         toast(ok ? 'Acesso salvo ✓' : 'Salvo aqui — rode o SQL p/ valer pro cliente');
+      };
+      refresh();
+    })();
+    // acesso às ABAS por empresa (mesma UX das trilhas)
+    (function(){
+      const grid=document.getElementById('eaGrid'), save=document.getElementById('eaSave'), all=document.getElementById('eaAll'), count=document.getElementById('eaCount');
+      if(!grid) return;
+      const items=()=>[...grid.querySelectorAll('.et-item')];
+      const refresh=()=>{
+        const on=items().filter(b=>b.classList.contains('on')).length, tot=items().length;
+        count.textContent = on===tot ? 'Vê todas as '+tot+' abas' : on+' de '+tot+' liberadas';
+        all.textContent = on===tot ? 'Bloquear todas' : 'Liberar todas';
+      };
+      items().forEach(b=> b.onclick=()=>{ const on=!b.classList.contains('on'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); b.querySelector('.et-state').textContent=on?'Liberada':'Bloqueada'; refresh(); });
+      all.onclick=()=>{ const tot=items().length, on=items().filter(b=>b.classList.contains('on')).length; const target=on!==tot; items().forEach(b=>{ b.classList.toggle('on',target); b.setAttribute('aria-pressed',target); b.querySelector('.et-state').textContent=target?'Liberada':'Bloqueada'; }); refresh(); };
+      save.onclick=async ()=>{
+        const checked=items().filter(b=>b.classList.contains('on')).map(b=>b.dataset.ea);
+        if(!checked.length){ toast('Libere ao menos 1 aba (ou o cliente não veria nada)'); return; }
+        const allowed = checked.length===items().length ? [] : checked;  // todas = sem restrição
+        save.disabled=true; save.textContent='Salvando…';
+        const ok=await saveEmpAbas(empresaSel, allowed);
+        save.disabled=false; save.innerHTML='<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar';
+        toast(ok ? 'Abas salvas ✓' : 'Salvo aqui — rode o SQL p/ valer pro cliente');
+        applyNavPermissions();
       };
       refresh();
     })();
@@ -2766,6 +2845,38 @@ function pickTrilhaCover(id){
   };
   inp.click();
 }
+function getCoverFor(url, nome){
+  const u = (url||'').toLowerCase();
+  const n = (nome||'').toLowerCase();
+  // Capa customizada: Manual dos 9 Passos
+  if(u.includes('manual-9-passos') || (n.includes('manual') && n.includes('9 passos'))){
+    return `<div class="mc-cover mc-cover-manual">
+      <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="mcbg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#1a0f18"/>
+            <stop offset="60%" stop-color="#0f0d14"/>
+            <stop offset="100%" stop-color="#080810"/>
+          </linearGradient>
+          <radialGradient id="mcglow" cx="85%" cy="0%" r="90%">
+            <stop offset="0%" stop-color="#ff4d6d" stop-opacity=".55"/>
+            <stop offset="45%" stop-color="#ff4d6d" stop-opacity=".12"/>
+            <stop offset="100%" stop-color="#ff4d6d" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="160" fill="url(#mcbg)"/>
+        <rect width="400" height="160" fill="url(#mcglow)"/>
+        <line x1="370" y1="10" x2="410" y2="60" stroke="#ff4d6d" stroke-opacity=".35" stroke-width="1.2"/>
+        <line x1="355" y1="10" x2="395" y2="55" stroke="#ff4d6d" stroke-opacity=".2" stroke-width="1"/>
+        <text x="24" y="42" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="2.4" fill="#ff4d6d">MANUAL DE BOLSO · ATENDIMENTO</text>
+        <text x="24" y="90" font-family="Sora, Inter, system-ui, sans-serif" font-size="34" font-weight="900" letter-spacing="-.8" fill="#ffffff">O que <tspan fill="#ff4d6d" font-style="italic">fazer</tspan>,</text>
+        <text x="24" y="126" font-family="Sora, Inter, system-ui, sans-serif" font-size="34" font-weight="900" letter-spacing="-.8" fill="#ffffff">quando <tspan fill="#ff4d6d" font-style="italic">acontecer.</tspan></text>
+      </svg>
+    </div>`;
+  }
+  // Placeholder padrão (documento genérico)
+  return `<div class="mc-cover"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg></div>`;
+}
 function renderMateriais(){
   const wrap=document.getElementById('materiaisWrap'); if(!wrap) return;
   const list=MAT.all();
@@ -2783,7 +2894,7 @@ function renderMateriais(){
   const cards = list.length ? `<div class="mat-grid">${list.map(m=>`
     <div class="material-card" data-mat="${m.id}">
       ${Auth.isAdmin()?`<button class="icon-btn del" data-matrm="${m.id}" title="Remover"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>`:''}
-      <div class="mc-cover"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg></div>
+      ${getCoverFor(m.url, m.nome)}
       <div class="mc-body">
         <h4>${m.nome}</h4>
         <p>${m.desc||'Toque pra abrir o material.'}</p>
@@ -3012,7 +3123,11 @@ async function enterApp(){
   if(!Auth.isAdmin() && Auth.isGestor()){ const nm=document.getElementById('navMetricas'); if(nm) nm.style.display=''; }
   // render
   renderTrilhaChips(); renderEmpSwitch(); renderAulas(); renderScripts(); refreshProgress(); bindGoto();
-  show('inicio');
+  applyNavPermissions();
+  // primeira view: se cliente tem restrição e "inicio" não tá liberado, vai pra primeira permitida
+  const _allowedBoot = abasVisiveis();
+  const _firstView = (!_allowedBoot || _allowedBoot.has('inicio')) ? 'inicio' : (NAV_KEYS.find(k=>_allowedBoot.has(k)) || 'inicio');
+  show(_firstView);
   setTimeout(()=>{ try{ loadYTApi(()=>{}); }catch(e){} }, 800);   // aquece o player: 1º vídeo abre na hora
 }
 
