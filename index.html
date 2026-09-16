@@ -954,9 +954,10 @@
   .material-card .mc-body{flex:1; min-width:0}
   .material-card h4{font-size:14px; font-weight:800}
   .material-card p{font-size:12px; color:var(--g500); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .mat-modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(11,10,13,.86); backdrop-filter:blur(4px); padding:24px}
+  .mat-modal{display:none; position:fixed; inset:0; z-index:200; background:rgba(11,10,13,.92); backdrop-filter:blur(6px); padding:12px}
   .mat-modal.on{display:flex; align-items:center; justify-content:center}
-  .mm-box{width:100%; max-width:1000px; height:100%; max-height:90vh; background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .mm-box{width:100%; max-width:1600px; height:100%; max-height:calc(100vh - 24px); background:var(--navy-deep); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  @media(max-width:720px){ .mat-modal{padding:0} .mm-box{border-radius:0; max-height:100vh; border:0} }
   .mm-head{display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line)}
   .mm-head b{flex:1; font-size:14px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .mm-actions{display:flex; gap:8px; flex-shrink:0}
@@ -2101,7 +2102,7 @@ function openAula(id){
   const nextA = nextId ? DB.aulas().find(x=>x.id===nextId) : null;
   const mats = (a.mats||[]).filter(m=>m && (m.nome||m.url));
   const matsHTML = mats.length
-    ? mats.map(m=>`<a class="mat-item" href="${m.url||'#'}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>${m.nome||'Material'}<span class="dl">Baixar</span></a>`).join('')
+    ? mats.map(m=>`<a class="mat-item" href="#" data-matinline="${m.url||''}"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>${m.nome||'Material'}<span class="dl">Abrir</span></a>`).join('')
     : `<div class="mat-item"><svg viewBox="0 0 24 24"><path d="M14 3v5h5M6 3h8l5 5v13H6V3z"/></svg>Materiais em breve<span class="badge-soon">Em produção</span></div>`;
 
   const playerHTML = vid
@@ -2788,14 +2789,18 @@ function renderMateriais(){
   }
   wrap.querySelectorAll('[data-mat]').forEach(el=> el.onclick=()=> openMaterial(el.dataset.mat));
 }
+function openMaterialUrl(url, nome){
+  if(!url) return;
+  let embed=url;
+  const g=url.match(/drive\.google\.com\/file\/d\/([^/]+)/); if(g) embed=`https://drive.google.com/file/d/${g[1]}/preview`;
+  document.getElementById('matModalTitle').textContent=nome||'Material';
+  document.getElementById('matModalOpen').href=url;
+  document.getElementById('matModalFrame').src=embed;
+  document.getElementById('matModal').classList.add('on');
+}
 function openMaterial(id){
   const m=MAT.all().find(x=>x.id===id); if(!m) return;
-  let url=m.url;
-  const g=url.match(/drive\.google\.com\/file\/d\/([^/]+)/); if(g) url=`https://drive.google.com/file/d/${g[1]}/preview`;
-  document.getElementById('matModalTitle').textContent=m.nome;
-  document.getElementById('matModalOpen').href=m.url;
-  document.getElementById('matModalFrame').src=url;
-  document.getElementById('matModal').classList.add('on');
+  openMaterialUrl(m.url, m.nome);
 }
 function closeMaterial(){ document.getElementById('matModal').classList.remove('on'); document.getElementById('matModalFrame').src=''; }
 
@@ -2912,6 +2917,14 @@ document.getElementById('empBtn').addEventListener('click', e=>{ e.stopPropagati
 document.addEventListener('click', e=>{ const sw=document.getElementById('empSwitch'); if(sw && !sw.contains(e.target)) sw.classList.remove('open'); });
 document.getElementById('matModalClose').addEventListener('click', closeMaterial);
 document.getElementById('matModal').addEventListener('click', e=>{ if(e.target.id==='matModal') closeMaterial(); });
+document.addEventListener('click', e=>{
+  const a=e.target.closest('[data-matinline]'); if(!a) return;
+  e.preventDefault();
+  const url=a.getAttribute('data-matinline');
+  const nome=(a.textContent||'').replace(/Abrir$/,'').trim();
+  openMaterialUrl(url, nome);
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('matModal').classList.contains('on')) closeMaterial(); });
 
 /* admin form */
 document.getElementById('afYt').addEventListener('input', ytPrev);
